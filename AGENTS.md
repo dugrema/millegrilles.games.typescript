@@ -4,9 +4,10 @@ This project provides multiple simple games using client-side javascript and Rea
 
 ## Development rules
 
-* Always work within the react-games1/ project directory.
-* The javascript project is under react-games1/vite-project.
-* The React application source is under react-games1/vite-project/app.
+* Always work within the millegrilles.games.typescript/ project directory.
+* The javascript project is under millegrilles.games.typescript/vite-project.
+* The React application source is under millegrilles.games.typescript/vite-project/app.
+* Do not use millegrilles.games.typescript/docs, this is the github pages publishing directory.
 * **NEVER** use git. Always ask the user if you need to use git.
 * Use a timeout when starting the server with `npm run dev` to check if the application runs, you need to change to the full path of `vite-project` to run npm commands.
 * Ensure project integrity when finishing a coding/bug fixing cycle
@@ -257,7 +258,7 @@ Super Mario is a classic platformer game where players control Mario, navigating
 ### Directory Structure
 
 ```
-react-games1/vite-project/app/
+millegrilles.games.typescript/vite-project/app/
 ├── games/
 │   └── supermario/
 │       ├── index.tsx               # Main game entry point
@@ -287,7 +288,7 @@ react-games1/vite-project/app/
 ```
 
 Note: 
-+ When using tools, use relative paths from react-games1, e.g. `react-games1/vite-project/games/supermario/index.tsx`.
++ When using tools, use relative paths from millegrilles.games.typescript, e.g. `millegrilles.games.typescript/vite-project/games/supermario/index.tsx`.
 + When using shell commands, use absolute paths or change to the proper directory first.
 
 ### Key Features

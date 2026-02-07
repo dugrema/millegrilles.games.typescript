@@ -155,7 +155,7 @@ The game has **three critical issues**:
 
 ## Phase 1: Fix Input State Type Definition (Critical)
 
-**File**: `react-games1/vite-project/app/games/supermario/types.ts`
+**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/types.ts`
 
 **Line**: ~102 (`InputState` interface)
 
@@ -179,7 +179,7 @@ export interface InputState {
 
 ## Phase 2: Update InputHandler (Critical)
 
-**File**: `react-games1/vite-project/app/games/supermario/components/InputHandler.tsx`
+**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/components/InputHandler.tsx`
 
 **Location**: Lines 24-36
 
@@ -191,7 +191,7 @@ export interface InputState {
 
 ## Phase 3: Update GameOverlay Interface & Handler (Critical)
 
-**File**: `react-games1/vite-project/app/games/supermario/components/GameOverlay.tsx`
+**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/components/GameOverlay.tsx`
 
 **Change 1**: Update interface (around line 19)
 
@@ -287,7 +287,7 @@ const handleOverlayClick = () => {
 
 ## Phase 4: Pass Input Actions to GameOverlay (Critical)
 
-**File**: `react-games1/vite-project/app/games/supermario/Game.tsx`
+**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/Game.tsx`
 
 **Location**: Lines 115-125
 
@@ -324,7 +324,7 @@ const handleOverlayClick = () => {
 
 ## Phase 5: Update startGame Function (Quality of Life)
 
-**File**: `react-games1/vite-project/app/games/supermario/Game.tsx`
+**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/Game.tsx`
 
 **Location**: Lines 632-638
 
@@ -359,7 +359,7 @@ const startGame = () => {
 
 ## Phase 6: Verify Game Loop (Important)
 
-**File**: `react-games1/vite-project/app/games/supermario/Game.tsx`
+**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/Game.tsx`
 
 **Check**: The game loop should automatically start when `gameState` changes to PLAYING.
 

@@ -200,7 +200,7 @@ Snake is a classic arcade game where a snake-shaped player moves around a grid e
 
 ### Directory Structure
 ```
-react-games1/vite-project/app/
+millegrilles.games.typescript/vite-project/app/
 ├── games/
 │   └── flappybird/
 │       ├── index.tsx           # Main game entry point
@@ -329,7 +329,7 @@ react-games1/vite-project/app/
 
 ### Directory Structure
 ```
-react-games1/vite-project/app/
+millegrilles.games.typescript/vite-project/app/
 ├── games/
 │   └── minesweeper/
 │       ├── index.tsx           # Main game entry point
