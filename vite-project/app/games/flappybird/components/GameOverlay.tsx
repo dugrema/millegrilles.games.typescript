@@ -1,4 +1,4 @@
-// react-games1/vite-project/app/games/flappybird/components/GameOverlay.tsx
+// millegrilles.games.typescript/vite-project/app/games/flappybird/components/GameOverlay.tsx
 import React from "react";
 
 export const GameOverlay: React.FC<{
