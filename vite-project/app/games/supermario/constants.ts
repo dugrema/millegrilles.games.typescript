@@ -76,7 +76,6 @@ export const KEYS = {
   RIGHT: "ArrowRight",
   JUMP: " ",
   RUN: "ShiftLeft",
-  PAUSE: "Escape",
   RESTART: "KeyR",
   ESCAPE: "Escape",
   SPRINT: "ShiftLeft",
@@ -90,10 +89,8 @@ export const KEY_DESCRIPTIONS = {
   [KEYS.DOWN]: "Crouch / Enter Pipes",
   [KEYS.JUMP]: "Jump",
   [KEYS.RUN]: "Run",
-  [KEYS.PAUSE]: "Pause Game",
   [KEYS.RESTART]: "Start / Restart",
-  [KEYS.ESCAPE_LEFT]: "Escape / Quit",
-  [KEYS.SPRINT]: "Sprint / Fireball",
+  [KEYS.ESCAPE]: "Pause / Escape / Quit",
 } as const;
 
 // Mobile controls

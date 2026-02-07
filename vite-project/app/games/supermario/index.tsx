@@ -164,12 +164,10 @@ const handleKeyDown = (
   } else if (e.code === KEYS.JUMP) {
     inputMap.jumpPressed = true;
     inputMap.jumpHeld = true;
-  } else if (e.code === KEYS.PAUSE) {
-    inputMap.jumpPressed = true; // Used to pause
   } else if (e.code === KEYS.RESTART) {
     inputMap.jumpPressed = true; // Used to restart
   } else if (e.code === KEYS.ESCAPE) {
-    inputMap.jumpPressed = true; // Used to quit
+    inputMap.jumpPressed = true; // Used to pause/resume/quit
   }
 
   setPlayerInput(inputMap);
