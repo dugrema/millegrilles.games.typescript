@@ -4,421 +4,281 @@
 This plan outlines the step-by-step implementation of a Super Mario clone game using React 19, TypeScript, and styled-components. The implementation follows the existing game patterns (Minesweeper, Tetris, Snake, Flappy Bird).
 
 ---
+# Super Mario Clone - High level design
 
-## Phase 1: Project Structure (DONE)
+## User requirements
 
-**Goal:** Set up basic file structure for Super Mario clone to ensure the page loads via router.
+This game is to be a side-scroller similar to the original Super Mario (1). It needs to support desktop and mobile play, multiple zones (stages), sounds, and saves the current progress in localStorage. 
 
-### Phase 2: Player Physics & Movement (DONE)
-**File:** `components/Player.tsx`
+## Current State
+- **Route**: `/vite-project/app/routes/games/supermario.tsx` (currently shows "TODO")
+- **Game Directory**: Has `constants.ts` with basic game configuration
+- **Pattern Established**: Context Provider + Hook + Component structure (based on Minesweeper)
 
-```typescript
-// Basic player rendering and movement
-// Implement gravity, jumping, horizontal movement, friction, run boost
-// Simple sprite rendering with animation states
-```
+## User test after each phase
 
-### Phase 3: Camera System (DONE)
-**File:** `components/Camera.tsx`
+The implementation needs to be cut in phases that can be coded then loaded by the user in a browser to test that the phase is complete and working. Start with the gameloop with some logging, then keyboard handling, then increasingly complex behavior.
 
-```typescript
-// Camera following logic
-// Smooth horizontal scrolling
-// Level boundaries
-```
+## Implementation Phases
 
-### Phase 4: Platform System (DONE)
-**File:** `components/Platforms.tsx`
+### Phase 1: Basic Gameloop with Logging
+**Purpose**: Establish foundation with requestAnimationFrame and state tracking
 
-```typescript
-// Tile-based map parsing
-// Platform collision detection
-// Platform types: ground, bricks, question blocks, pipes, blocks
-```
+**Implementation**:
+- Create `types.ts` with TypeScript interfaces
+- Update `index.tsx` as GameContext.Provider with basic state
+- Create `Game.tsx` component wrapper
+- Implement `useSuperMario()` hook
+- Add requestAnimationFrame gameloop
+- Basic player sprite
+- Simple ground platform
+- Player position tracking (x, y)
+- Console logging for frame rate, time delta, and game state
 
-### Phase 5: UI Elements (DONE)
-**File:** `components/UIOverlay.tsx`, `components/GameOverlay.tsx`
+**Success Criteria**: Game runs, logs show "Starting game loop", "Frame: X, Delta: Y"
 
-```typescript
-// Score, lives, level display
-// Time counter
-// Start/game over/victory screens
-```
-
-### Phase 6: Game Loop & Canvas Rendering (DONE)
-**File:** `components/GameContainer.tsx`
-
-```typescript
-// Canvas-based rendering
-// requestAnimationFrame game loop
-// Main state management
-```
-
-### Phase 7: Controls & Input
-**File:** Update `index.tsx` and `Game.tsx`
-
-```typescript
-// Keyboard event listeners (arrow keys, X/Z, Enter, Space, Shift)
-// Touch controls for mobile
-// Pause functionality
-// Restart functionality
-```
-
-### Phase 8: Enemy System
-**File:** `components/Enemies.tsx`
-
-```typescript
-// Goomba AI (patrol back and forth, turn at obstacles)
-// Koopa AI (move in patterns, can be stomped)
-// Enemy death animation
-// Player vs enemy collision
-```
-
-### Phase 9: Collectibles System
-**File:** `components/Collectibles.tsx`
-
-```typescript
-// Coin spawning and collection
-// Power-up types: Mushroom, Fire Flower
-// Power-up spawning from question blocks
-```
-
-### Phase 10: Sound Effects
-**File:** Update `index.tsx` to include sound implementations
-
-```typescript
-// Web Audio API implementation
-// Jump sound, coin sound, enemy defeat, power-up, game over, level complete
-// Background music
-```
-
-### Phase 11: Lives & Scoring
-**File:** Update `index.tsx` and `Game.tsx`
-
-```typescript
-// Lives system with 3-5 lives
-// Score tracking
-// Respawn mechanics
-// High score in localStorage
-```
-
-### Phase 12: Level Progression
-**File:** Update `constants.ts` and `index.tsx`
-
-```typescript
-// Multiple level definitions with increasing difficulty
-// Flag pole at level end
-// Level transition screens
-```
-
-### Phase 13: Power-Up Mechanics
-**File:** Update `index.tsx`, `Player.tsx`, `Collectibles.tsx`
-
-```typescript
-// Power-up states: small, big, fire
-// Size changes and hit detection
-// Fire flower shooting
-// Power-up duration and expiration
-```
-
-### Phase 14: Visual Polish
-**File:** Update all components
-
-```typescript
-// Sprite animations (walk, idle, jump, duck)
-// Particle effects (sparkles, dust)
-// Background elements (clouds, hills, bushes)
-// Responsive design adjustments
-```
-
-### Phase 15: Save Progress (Optional)
-**File:** Update `index.tsx`
-
-```typescript
-// Save game state to localStorage
-// Load progress on restart
-// Persist level completion
-```
-
----
-# Implementation Plan: Fix Super Mario Game Startup & Input Issues
-
-## Root Cause Analysis
-
-The game has **three critical issues**:
-
-1. **Type Mismatch**: `types.ts` defines `space: boolean` in `InputState`, but `InputHandler` uses `start: boolean` → Keyboard Space doesn't trigger game start
-2. **Overlay Click Doesn't Set Input**: Clicking start screen doesn't set `start: true` before calling `startGame` → No interaction state
-3. **Game Loop Unclear**: Need to verify game loop runs after state changes → Game may not start
+**Files to create**:
+1. `vite-project/app/games/supermario/types.ts`
+2. `vite-project/app/games/supermario/Game.tsx`
+3. Update `vite-project/app/games/supermario/index.tsx` with Provider + hook
 
 ---
 
-## Phase 1: Fix Input State Type Definition (Critical)
+### Phase 2: Keyboard Input Handling
+**Purpose**: Map keyboard commands to game actions
 
-**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/types.ts`
+**Implementation**:
+- Keyboard event listeners (keydown, keyup)
+- Key mappings: 
+  - Arrow keys for Left, Right
+  - SPACE for Jump
+  - SHIFT for running/fireball
+  - `r` for start/restart
+  - ESC for pause/resume
+- Update player velocity based on input
+- Input event logging
+- Start screen that waits for `r` to start
 
-**Line**: ~102 (`InputState` interface)
+**Success Criteria**: Pressing keys updates player velocity, logs show input events
 
-**Change**:
-```tsx
-export interface InputState {
-  left: boolean;
-  right: boolean;
-  up: boolean;
-  down: boolean;
-  jump: boolean;
-  run: boolean;
-  duck: boolean;
-  pause: boolean;
-  restart: boolean;
-  start: boolean;  // ✅ Changed from: space: boolean
-}
-```
-
----
-
-## Phase 2: Update InputHandler (Critical)
-
-**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/components/InputHandler.tsx`
-
-**Location**: Lines 24-36
-
-**Status**: ✅ Already correct! The `Space` key is mapped to `"start"` which now matches the updated `InputState`.
-
-**No changes needed** - the INPUT_KEYS mapping is correct.
+**Files to update**:
+- `types.ts` (keyboard state)
+- `index.tsx` (keyboard handlers)
+- `Game.tsx` (controls help display)
 
 ---
 
-## Phase 3: Update GameOverlay Interface & Handler (Critical)
+### Phase 3: Basic Physics & Collision
+**Purpose**: Implement gravity, collision detection, platform interaction
 
-**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/components/GameOverlay.tsx`
+**Implementation**:
+- Gravity (falling acceleration)
+- Platform collision detection (bounding box)
+- Jump mechanics (force on ground)
+- Ground detection
+- Simple platform generation
+- Collision response
 
-**Change 1**: Update interface (around line 19)
+**Success Criteria**: Player can jump, land on platforms, gravity pulls down
 
-**Before**:
-```tsx
-interface GameOverlayProps {
-  gameState: GameState;
-  score: number;
-  highScore?: number;
-  level: number;
-  onRestart?: () => void;
-  onResume?: () => void;
-  onNextLevel?: () => void;
-  onStart?: () => void;
-}
-```
-
-**After**:
-```tsx
-interface GameOverlayProps {
-  gameState: GameState;
-  score: number;
-  highScore?: number;
-  level: number;
-  inputActions?: { setInput?: (state: Partial<InputState>) => void };
-  onRestart?: () => void;
-  onResume?: () => void;
-  onNextLevel?: () => void;
-  onStart?: () => void;
-}
-```
-
-**Change 2**: Update function signature (around line 44)
-
-**Before**:
-```tsx
-export default function GameOverlay({
-  gameState,
-  score,
-  highScore = 0,
-  level,
-  onRestart,
-  onResume,
-  onNextLevel,
-  onStart,
-}: GameOverlayProps) {
-```
-
-**After**:
-```tsx
-export default function GameOverlay({
-  gameState,
-  score,
-  highScore = 0,
-  level,
-  inputActions = {},
-  onRestart,
-  onResume,
-  onNextLevel,
-  onStart,
-}: GameOverlayProps) {
-```
-
-**Change 3**: Add helper function before renderStartScreen (around line 314)
-
-**After** renderStartScreen: Add:
-```tsx
-const handleOverlayClick = () => {
-  // Set input state first to track user interaction
-  if (inputActions?.setInput) {
-    inputActions.setInput({ start: true });
-  }
-  // Then trigger game start
-  if (onStart) {
-    onStart();
-  }
-};
-```
-
-**Change 4**: Update onClick handler (line 326)
-
-**Before**:
-```tsx
-<ContainerWrapper onClick={onStart}>
-```
-
-**After**:
-```tsx
-<ContainerWrapper onClick={handleOverlayClick}>
-```
+**Files to update**:
+- `types.ts` (platform data structure)
+- `index.tsx` (physics system)
+- `constants.ts` (gravity/jump values)
+- `Game.tsx` (render platforms)
 
 ---
 
-## Phase 4: Pass Input Actions to GameOverlay (Critical)
+### Phase 4: Running & Double Jump
+**Purpose**: Add movement variations and advanced mechanics
 
-**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/Game.tsx`
+**Implementation**:
+- Run speed boost (Shift/Right arrow)
+- Double jump capability
+- Running mechanics
+- Air resistance/friction
+- Updated physics constants
 
-**Location**: Lines 115-125
+**Success Criteria**: Player can run faster, perform double jump, responsive movement
 
-**Before**:
-```tsx
-<GameOverlay
-  gameState={gameState}
-  score={score}
-  highScore={highScore}
-  level={level}
-  onRestart={actions.restartLevel}
-  onResume={actions.resumeGame}
-  onNextLevel={actions.nextLevel}
-  onStart={actions.startGame}
-/>
+**Files to update**:
+- `types.ts` (run/air state)
+- `index.tsx` (running logic)
+- `constants.ts` (run speeds)
+
+---
+
+### Phase 5: Scrolling Camera
+**Purpose**: Camera follows player through level
+
+**Implementation**:
+- Camera x-position tracking
+- Smooth camera movement (lerp)
+- Camera constraints
+- Level boundaries
+- Camera offset calculation
+
+**Success Criteria**: Camera follows player, smooth pan effect
+
+**Files to update**:
+- `types.ts` (camera state)
+- `index.tsx` (camera system)
+- `Game.tsx` (apply camera offset)
+
+---
+
+### Phase 6: Game Elements
+**Purpose**: Add interactive game objects
+
+**Implementation**:
+- Coins (collectibles)
+- Enemies (Goomba-style, moving back/forth)
+- Power-ups (mushrooms)
+- Collectible tracking (score, coins, lives)
+- Enemy collision (hurt player)
+- Item pickup mechanics
+
+**Success Criteria**: Can collect coins, enemies move, mushroom appears, collision works
+
+**Files to create**:
+- `components/Enemy.tsx`, `Coin.tsx`, `PowerUp.tsx`, `Platform.tsx`
+
+---
+
+### Phase 7: Multiple Zones/Stages
+**Purpose**: Implement multiple game levels
+
+**Implementation**:
+- Level data structure (platforms, enemies, coins)
+- Level switching system
+- Level progress tracking
+- Zone definitions (ground, air, underground, castle)
+- 3 zones with different environments
+- Background colors/textures per zone
+
+**Success Criteria**: Can switch levels, different environments, progress saves
+
+**Files to create**:
+- `levels/` directory with level data files
+- Update `types.ts`, `index.tsx`, `Game.tsx`
+
+---
+
+### Phase 8: Mobile Controls
+**Purpose**: Touch controls for mobile devices
+
+**Implementation**:
+- Virtual joystick for movement
+- Jump button
+- Pause/Menu button
+- Touch event handling
+- Responsive layout
+- Button styling
+- Controls visibility toggle
+
+**Success Criteria**: Touch buttons work, virtual joystick controls player, responsive on mobile
+
+**Files to create**:
+- `components/TouchControls.tsx`
+- Update `Game.tsx`
+
+---
+
+### Phase 9: Save/Load System
+**Purpose**: Persist game progress in localStorage
+
+**Implementation**:
+- Save current level
+- Save score and lives
+- Save high scores
+- Save coin count
+- Load function on game start
+- Auto-save on level completion
+
+**Success Criteria**: Progress saves to localStorage, loads correctly
+
+**Files to update**:
+- `types.ts` (save data structure)
+- `index.tsx` (localStorage operations)
+- `constants.ts` (storage keys)
+
+---
+
+### Phase 10: Audio System
+**Purpose**: Sound effects and music
+
+**Implementation**:
+- AudioContext based sound system
+- Jump, coin, enemy defeat, power-up sounds
+- Win/Lose sounds
+- Background music per zone
+- Sound volume control
+
+**Success Criteria**: Audio plays on events, music changes per zone
+
+**Files to update**:
+- `index.tsx` (SoundManager class)
+
+---
+
+### Phase 11: UI & Polish
+**Purpose**: Complete UI and visual polish
+
+**Implementation**:
+- HUD (score, coins, lives, level)
+- Start screen
+- Pause menu
+- Game over screen
+- Win screen
+- Level transition animations
+- Sprite animations (idle, walk, jump, run)
+- Visual effects (particles, trails)
+
+**Files to create**:
+- `components/HUD.tsx`, `StartScreen.tsx`, `PauseMenu.tsx`, `GameOver.tsx`, `WinScreen.tsx`
+- Update `Game.tsx` for screen management
+
+**Success Criteria**: Complete UI flow, smooth transitions, readable text
+
+---
+
+### Phase 12: Final Integration
+**Purpose**: Test and verify entire game
+
+**Implementation**:
+- Full game flow testing
+- Performance optimization
+- Bug fixes
+- Device compatibility testing
+- Accessibility improvements
+
+**Files to update**:
+- Documentation in README
+- Code refinements
+
+**Success Criteria**: Game fully playable, responsive across devices, good performance
+
+## File Structure Overview
+
 ```
-
-**After**:
-```tsx
-<GameOverlay
-  gameState={gameState}
-  score={score}
-  highScore={highScore}
-  level={level}
-  inputActions={{ setInput: actions.setInput }}
-  onRestart={actions.restartLevel}
-  onResume={actions.resumeGame}
-  onNextLevel={actions.nextLevel}
-  onStart={actions.startGame}
-/>
+vite-project/app/games/supermario/
+├── index.tsx            (Provider + Hook - core, Phase 1+3+4+5+6+7+8+9+10)
+├── Game.tsx             (Component - Phase 1+5+11)
+├── types.ts             (TypeScript interfaces - Phase 1)
+├── constants.ts         (Game constants - exists, Phase 4)
+├── levels/              (Level data - Phase 7)
+│   ├── level1.ts
+│   ├── level2.ts
+│   └── level3.ts
+└── components/          (UI and game objects - Phase 6+8+11)
+    ├── HUD.tsx
+    ├── StartScreen.tsx
+    ├── PauseMenu.tsx
+    ├── GameOver.tsx
+    ├── WinScreen.tsx
+    ├── TouchControls.tsx
+    ├── Enemy.tsx
+    ├── Coin.tsx
+    ├── PowerUp.tsx
+    └── Platform.tsx
 ```
-
----
-
-## Phase 5: Update startGame Function (Quality of Life)
-
-**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/Game.tsx`
-
-**Location**: Lines 632-638
-
-**Before**:
-```tsx
-const startGame = () => {
-  gameState = GameState.PLAYING;
-  isPaused = false;
-};
-```
-
-**After**:
-```tsx
-const startGame = () => {
-  gameState = GameState.PLAYING;
-  isPaused = false;
-  // Reset input state to clean start
-  input.left = false;
-  input.right = false;
-  input.up = false;
-  input.down = false;
-  input.jump = false;
-  input.run = false;
-  input.duck = false;
-  input.pause = false;
-  input.restart = false;
-  input.start = false;
-};
-```
-
----
-
-## Phase 6: Verify Game Loop (Important)
-
-**File**: `millegrilles.games.typescript/vite-project/app/games/supermario/Game.tsx`
-
-**Check**: The game loop should automatically start when `gameState` changes to PLAYING.
-
-**Verification needed**:
-1. The `gameLoop` function (lines 492-619) is called repeatedly
-2. It checks `if (gameState === GameState.PLAYING)` before processing
-3. The `useEffect` should be watching `gameState` and `isPaused` to control loop execution
-
-**Status**: ✅ The game loop structure is correct and should work once the state is properly set.
-
----
-
-## Execution Sequence
-
-When user interacts:
-
-1. **User clicks overlay** → `handleOverlayClick` → `inputActions.setInput({ start: true })` → `actions.startGame()`
-2. **User presses SPACE** → InputHandler receives event → `INPUT_KEYS["Space"] = "start"` → `onInputChange({ start: true })` → `actions.startGame()`
-3. **startGame()** → `gameState = GameState.PLAYING` → `isPaused = false`
-4. **Game loop** → Detects `gameState === PLAYING` → Processes input → Updates player → Renders frame
-
----
-
-## Testing Checklist
-
-After implementing changes:
-
-1. ✅ Run `npx tsc --noEmit` → Check for TypeScript errors
-2. ✅ Start dev server → Check console for errors
-3. ✅ Click overlay → Verify it disappears (overlay gone)
-4. ✅ Press SPACE → Verify game starts (Mario should appear moving or be at start position)
-5. ✅ Press R or Enter → Verify restart functionality
-6. ✅ Press SPACE → Verify pause/resume works
-7. ✅ Use arrow keys → Verify movement
-8. ✅ Press SHIFT → Verify sprint/run
-
----
-
-## Files to Modify Summary
-
-| File | Lines Modified | Change Type |
-|------|---------------|-------------|
-| `types.ts` | ~102 | Type definition update |
-| `GameOverlay.tsx` | ~19, 44, 314-326, 326 | Interface, signature, helper, onClick |
-| `Game.tsx` | 115-125 | Props pass to GameOverlay |
-
-**Total**: 3 files, ~15-20 lines of code changes
-
----
-
-## Expected Outcome
-
-After these fixes:
-
-- ✅ Overlay disappears when clicked (already working)
-- ✅ SPACE key starts the game (now fixed - type alignment)
-- ✅ Overlay click sets input state (now fixed)
-- ✅ Game loop runs continuously
-- ✅ Keyboard controls work during gameplay
-- ✅ On-screen buttons work via TouchControls
-
-The game should now start reliably when the overlay is clicked or SPACE is pressed, with proper input handling throughout gameplay.
