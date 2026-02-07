@@ -11,8 +11,8 @@ This project provides multiple simple games using client-side javascript and Rea
 * **NEVER** use git. Always ask the user if you need to use git.
 * Use a timeout when starting the server with `npm run dev` to check if the application runs, you need to change to the full path of `vite-project` to run npm commands.
 * Ensure project integrity when finishing a coding/bug fixing cycle
-  * Verify typescript by using `npx tsc --noEmit --jsx react-jsx` (with appropriate parameters, filtering and piping)
-  * Use `npm run build` to verify the integrity of the project
+  * Verify typescript by using `npx tsc --noEmit --jsx react-jsx` (with appropriate parameters, filtering and piping and absolute paths)
+  * Use `npm run build` to verify the integrity of the project (absolute paths)
 
 ## React Context Provider Pattern
 

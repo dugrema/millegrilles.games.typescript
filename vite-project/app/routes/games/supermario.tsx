@@ -1,6 +1,6 @@
 // Route component for Super Mario game with Phase 1.5 integration
 import styled from "styled-components";
-import { SuperMarioGameProvider } from "../../games/supermario";
+import { SuperMarioGameProvider, useSuperMario } from "../../games/supermario";
 import Game from "../../games/supermario/Game";
 
 const PageContainer = styled.div`
@@ -19,6 +19,53 @@ const GameWrapper = styled.div`
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   border-radius: 8px;
   overflow: hidden;
+`;
+
+const StartScreen = styled.div<{ show: boolean }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: ${(props) => (props.show ? "flex" : "none")};
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 50;
+  padding: 20px;
+  text-align: center;
+
+  strong {
+    color: #ffff00;
+    font-size: 28px;
+    margin-bottom: 15px;
+  }
+
+  p {
+    margin: 8px 0;
+    font-size: 16px;
+    color: #fff;
+  }
+
+  button {
+    margin-top: 25px;
+    padding: 12px 35px;
+    font-size: 16px;
+    background: #ff6b6b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: "Arial Black", sans-serif;
+    text-transform: uppercase;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #ff5252;
+      transform: scale(1.05);
+    }
+  }
 `;
 
 const Header = styled.div`
@@ -191,57 +238,16 @@ export default function SuperMario() {
           <HeaderSubtitle>Platformer Adventure</HeaderSubtitle>
         </Header>
 
-        <StartHint>
-          <strong>Press 'R' or Click to Start</strong>
-          <p>Use Arrow Keys or WASD to move</p>
-          <p>Space to jump • Shift to run</p>
-          <p>ESC to pause</p>
-          <button onClick={() => {}} type="button">
-            Start Game
-          </button>
-        </StartHint>
-
         <SuperMarioGameProvider>
           <Game />
+
+          <MobileControls>
+            {/* Mobile touch controls would be implemented in Phase 8 */}
+            <div className="control-group">
+              <button>🎮</button>
+            </div>
+          </MobileControls>
         </SuperMarioGameProvider>
-
-        <Controls>
-          <ControlLabel>
-            <strong>Controls:</strong>
-          </ControlLabel>
-          <ControlRow>
-            <span>←</span>
-            <span>→</span>
-          </ControlRow>
-          <ControlLabel>Move Left / Right</ControlLabel>
-
-          <ControlRow>
-            <span>SPACE</span>
-          </ControlRow>
-          <ControlLabel>Jump</ControlLabel>
-
-          <ControlRow>
-            <span>SHIFT</span>
-          </ControlRow>
-          <ControlLabel>Run / Sprint</ControlLabel>
-
-          <ControlRow>
-            <span>ESC</span>
-          </ControlRow>
-          <ControlLabel>Pause</ControlLabel>
-
-          <ControlRow>
-            <span>R</span>
-          </ControlRow>
-          <ControlLabel>Restart</ControlLabel>
-        </Controls>
-
-        <MobileControls>
-          {/* Mobile touch controls would be implemented in Phase 8 */}
-          <div className="control-group">
-            <button>🎮</button>
-          </div>
-        </MobileControls>
       </GameWrapper>
     </PageContainer>
   );

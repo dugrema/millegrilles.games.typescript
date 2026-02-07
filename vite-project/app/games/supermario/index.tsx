@@ -274,8 +274,57 @@ export function SuperMarioGameProvider({
     [player],
   );
 
+  // Player game actions
+  const actions = useMemo(
+    () => ({
+      restartLevel: () => {
+        loadLevel(currentLevel);
+      },
+      pauseGame: () => {
+        if (status === "playing") {
+          setStatus("paused");
+        }
+      },
+      resumeGame: () => {
+        if (status === "paused") {
+          setStatus("playing");
+        }
+      },
+      restartGame: () => {
+        setLives(INITIAL_LIVES);
+        setScore(INITIAL_SCORE);
+        setCoins(0);
+        loadLevel(1);
+      },
+      startGame: () => {
+        if (status === "start") {
+          loadLevel(currentLevel);
+          setStatus("playing");
+        }
+      },
+    }),
+    [status, currentLevel, loadLevel, lives, score, coins],
+  );
+
   // Handle player input
   const handleInput = useCallback(() => {
+    // Handle restart key to start or restart game
+    if (input.jumpPressed && (status === "start" || status === "paused")) {
+      loadLevel(currentLevel);
+      setStatus("playing");
+      setTimeout(() => {
+        actions.pauseGame();
+      }, 100);
+      return;
+    }
+
+    // Handle restart in game over state
+    if (status === "gameover" && input.jumpPressed) {
+      setStatus("start");
+      actions.pauseGame();
+      return;
+    }
+
     if (status === "paused" || status === "gameover" || status === "win")
       return;
 
@@ -296,7 +345,7 @@ export function SuperMarioGameProvider({
 
     const isMovingLeft = input.left;
     const isMovingRight = input.right;
-    const isJumping = input.jumpPressed;
+    const isJumping = input.jumpPressed && !input.jumpHeld;
 
     // Handle horizontal movement
     if (isMovingLeft && !isMovingRight) {
@@ -373,7 +422,7 @@ export function SuperMarioGameProvider({
     // Update player input
     setInput(newStateInput as PlayerInput);
     setPlayer((prev) => ({ ...prev, ...newState }));
-  }, [status, input, player]);
+  }, [status, input, player, actions]);
 
   // Movement helpers
   const moveLeft = () => setInput((prev) => ({ ...prev, left: true }));
@@ -664,27 +713,7 @@ export function SuperMarioGameProvider({
         isPaused: status === "paused",
         gameOverReason: null,
       },
-      actions: {
-        restartLevel: () => {
-          loadLevel(currentLevel);
-        },
-        pauseGame: () => {
-          if (status === "playing") {
-            setStatus("paused");
-          }
-        },
-        resumeGame: () => {
-          if (status === "paused") {
-            setStatus("playing");
-          }
-        },
-        restartGame: () => {
-          setLives(INITIAL_LIVES);
-          setScore(INITIAL_SCORE);
-          setCoins(0);
-          loadLevel(1);
-        },
-      },
+      actions: actions,
     }),
     [
       status,
@@ -697,6 +726,7 @@ export function SuperMarioGameProvider({
       tiles,
       input,
       loadLevel,
+      actions,
     ],
   );
 
