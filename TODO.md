@@ -37,26 +37,28 @@ Note: When finishing a phase, always ensure the application can load and the scr
 - [x] **Implement level/world rendering**
 - [x] **Handle keyboard input and state updates**
 
-#### **Phase 1.5: Integration & Polish** ⚠️ IN PROGRESS
+#### **Phase 1.5: Integration & Polish** ✅ COMPLETED
 - [x] **Export Provider from supermario directory**
 - [x] **Create route component in routes/games/**
 - [x] **Fix START GAME button click handler**
 - [x] **Implement RESTART key to start game from 'start' status**
 - [x] **Verify game state transitions work correctly**
-- [ ] **Test basic gameplay loop**
+- [x] **Test basic gameplay loop**
 
-#### **Phase 1.6: Testing & Quality** 🚧 NOT STARTED
-- [ ] **Verify TypeScript compilation (`npx tsc --noEmit`)**
-- [ ] **Test movement (left, right, jump, double jump)**
-- [ ] **Test collision detection**
-- [ ] **Test level loading**
-- [ ] **Test game over/win conditions**
-- [ ] **Verify responsive design**
-- [ ] **Test audio playback**
+#### **Phase 1.6: Testing & Quality** IN PROGRESS
+- [ ] Fix ground on initial map
+- [ ] Remove menu overlay during gameplay
+- [ ] Test movement (left, right, jump, double jump)
+- [ ] Test collision detection
+- [ ] Test level loading
+- [ ] Test game over/win conditions
+- [ ] Verify responsive design
+- [ ] Test audio playback
+- [ ] Verify TypeScript compilation (`npx tsc --noEmit`)
 
 
 ## 📌 Blockers
 - None
 
 ---
-_Last updated: 2026-02-20 - Fixed button handler, needs RESTART key fix and testing_
+_Last updated: 2026-02-20

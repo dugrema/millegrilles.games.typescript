@@ -7,33 +7,23 @@ import type { Level, Tile, Position } from "../types";
 import { TILE_TYPES, LEVEL_CONFIG } from "../constants";
 
 // Level 1 map data (character-based representation)
+// Simple DEV map that fits the screen exactly.
 const LEVEL_1_MAP = [
-  "                                                                                                      ",
-  "                                                                                                      ",
-  "                                                                                                      ",
-  "                                                                                                      ",
-  "                                                                                                      ",
-  "                                                                                                      ",
-  "                                                                                                      ",
-  "                                                                                                      ",
-  "                  ? ? ? ? ? ? ?                                                                  ",
-  "               ?   BBBBBB   ?              G                                                       ",
-  "      G         ?   BBBBBB   ?              G                                                       ",
-  "        G       ?                  ?  G                                                 E    E     ",
-  "          G    ?    Q             B    ?  G           Q                                E        E    ",
-  "            G  ?  B    B         B       ?G         B   B                              E            E   ",
-  "               ?   B    B         B        ?         B   B                             E              E  ",
-  "          G     ?    B    B         B            G    B   B    B                    E                 E  ",
-  "        G         ?    B    B   Q               G    B   B    B                   E                    E ",
-  "               G    ?    B    B   B           G    B   B    B   B        G         E                      E",
-  "                                   B         G    B   B    B   B     G         E                        E",
-  "               G        G        B   B      G    B   B    B   B    G        E                          E",
-  "               G        G        B    B    G    B   B    B   B   G        E                            E",
-  "               G        G        B     B  G    B   B    B   B  G        E                              E",
-  "                     E          E      E        E                  E                               ",
-  "               G        G        G      G        E                  E                              ",
-  "                                                                                                    ",
-  "                   🚩                                                                                   ",
+  "                         ",
+  "                        B",
+  "                         ",
+  "                         ",
+  "                         ",
+  "                         ",
+  "                         ",
+  "                         ",
+  "                  ? ? ?  ",
+  "                   BBBB🚩",
+  "      G         ?   BBBB ",
+  "        GG  Q            ",
+  "                    Q    ",
+  "               E  B    B ",
+  "GGGGGGGGGGGGGGGGGGGGGGGGG",
 ];
 
 /**
@@ -196,8 +186,8 @@ export const LEVEL_1: Level = {
   width: LEVEL_CONFIG.LEVEL_WIDTH * LEVEL_CONFIG.TILE_SIZE,
   height: LEVEL_CONFIG.LEVEL_HEIGHT * LEVEL_CONFIG.TILE_SIZE,
   startPos: {
-    x: 100,
-    y: 400,
+    x: 64,
+    y: 288,
   },
   endPos: {
     x: 600,
