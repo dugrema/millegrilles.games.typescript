@@ -134,62 +134,6 @@ const soundManager = new SoundManager();
 // Super Mario Context
 const SuperMarioContext = createContext<SuperMarioContextType>(null);
 
-// Player input handler
-const handleKeyDown = (
-  e: KeyboardEvent,
-  setPlayerInput: (input: PlayerInput) => void,
-) => {
-  const inputMap: PlayerInput = {
-    left: false,
-    right: false,
-    up: false,
-    down: false,
-    runPressed: false,
-    runHeld: false,
-    jumpPressed: false,
-    jumpHeld: false,
-  };
-
-  if (e.code === KEYS.LEFT) {
-    inputMap.left = true;
-  } else if (e.code === KEYS.RIGHT) {
-    inputMap.right = true;
-  } else if (e.code === KEYS.UP) {
-    inputMap.up = true;
-  } else if (e.code === KEYS.DOWN) {
-    inputMap.down = true;
-  } else if (e.code === KEYS.RUN) {
-    inputMap.runPressed = true;
-    inputMap.runHeld = true;
-  } else if (e.code === KEYS.JUMP) {
-    inputMap.jumpPressed = true;
-    inputMap.jumpHeld = true;
-  } else if (e.code === KEYS.RESTART) {
-    inputMap.jumpPressed = true; // Used to restart
-  } else if (e.code === KEYS.ESCAPE) {
-    inputMap.jumpPressed = true; // Used to pause/resume/quit
-  }
-
-  setPlayerInput(inputMap);
-};
-
-const handleKeyUp = (
-  e: KeyboardEvent,
-  setPlayerInput: Dispatch<SetStateAction<Partial<PlayerInput>>>,
-) => {
-  if (e.code === KEYS.LEFT) {
-    setPlayerInput({ left: false });
-  } else if (e.code === KEYS.RIGHT) {
-    setPlayerInput({ right: false });
-  } else if (e.code === KEYS.UP) {
-    setPlayerInput({ up: false });
-  } else if (e.code === KEYS.DOWN) {
-    setPlayerInput({ down: false });
-  } else if (e.code === KEYS.RUN) {
-    setPlayerInput({ runPressed: false, runHeld: false });
-  }
-};
-
 // Super Mario Game Provider Component
 export function SuperMarioGameProvider({
   children,
@@ -308,14 +252,67 @@ export function SuperMarioGameProvider({
     [status, currentLevel, loadLevel, lives, score, coins],
   );
 
+  // Player input handler
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const inputMap = { ...input };
+
+      if (e.code === KEYS.LEFT) {
+        inputMap.left = true;
+      } else if (e.code === KEYS.RIGHT) {
+        inputMap.right = true;
+      } else if (e.code === KEYS.UP) {
+        inputMap.up = true;
+      } else if (e.code === KEYS.DOWN) {
+        inputMap.down = true;
+      } else if (e.code === KEYS.RUN) {
+        inputMap.runPressed = true;
+        inputMap.runHeld = true;
+      } else if (e.code === KEYS.JUMP) {
+        inputMap.jumpPressed = true;
+        inputMap.jumpHeld = true;
+      } else if (e.code === KEYS.RESTART) {
+        inputMap.jumpPressed = true; // Used to restart
+      } else if (e.code === KEYS.ESCAPE) {
+        inputMap.jumpPressed = true; // Used to pause/resume/quit
+      }
+
+      setInput(inputMap);
+    },
+    [input, setInput], // Dependencies: setInput from the game context
+  );
+
+  const handleKeyUp = useCallback(
+    (e: KeyboardEvent) => {
+      const inputMap = { ...input };
+      if (e.code === KEYS.LEFT) {
+        inputMap.left = false;
+      } else if (e.code === KEYS.RIGHT) {
+        inputMap.right = false;
+      } else if (e.code === KEYS.UP) {
+        inputMap.up = false;
+      } else if (e.code === KEYS.DOWN) {
+        inputMap.down = false;
+      } else if (e.code === KEYS.RUN) {
+        inputMap.runPressed = false;
+        inputMap.runHeld = false;
+      }
+      setInput(inputMap);
+    },
+    [input, setInput],
+  );
+
   // Handle player input
   const handleInput = useCallback(() => {
     // Handle restart key to start or restart game
     if (input.jumpPressed && (status === "start" || status === "paused")) {
+      console.log("Restart triggered:", { status, input });
       loadLevel(currentLevel);
       setStatus("playing");
+
+      // Wait a moment then set input state to start moving
       setTimeout(() => {
-        actions.pauseGame();
+        setInput({ ...input, left: true, right: false });
       }, 100);
       return;
     }
@@ -425,22 +422,6 @@ export function SuperMarioGameProvider({
     setInput(newStateInput as PlayerInput);
     setPlayer((prev) => ({ ...prev, ...newState }));
   }, [status, input, player, actions]);
-
-  // Movement helpers
-  const moveLeft = () => setInput((prev) => ({ ...prev, left: true }));
-  const moveRight = () => setInput((prev) => ({ ...prev, right: true }));
-  const moveUp = () => setInput((prev) => ({ ...prev, up: true }));
-  const moveDown = () => setInput((prev) => ({ ...prev, down: true }));
-
-  const startJump = () => setInput((prev) => ({ ...prev, jumpPressed: true }));
-  const continueJump = () => setInput((prev) => ({ ...prev, jumpHeld: true }));
-  const stopJump = () =>
-    setInput((prev) => ({ ...prev, jumpPressed: false, jumpHeld: false }));
-
-  const runStart = () =>
-    setInput((prev) => ({ ...prev, runPressed: true, runHeld: true }));
-  const runStop = () =>
-    setInput((prev) => ({ ...prev, runPressed: false, runHeld: false }));
 
   // Apply physics
   const applyPhysics = useCallback(
@@ -677,21 +658,33 @@ export function SuperMarioGameProvider({
 
   // Keyboard handlers
   useEffect(() => {
-    const handleKeyDownLocal = (e: KeyboardEvent) => handleKeyDown(e, setInput);
-    const handleKeyUpLocal = (e: KeyboardEvent) =>
+    // Pass the already-stable functions directly
+    // No need to create wrapper functions
+    window.addEventListener("keydown", (e: KeyboardEvent) => {
+      console.log("Keyboard 'keydown' event:", e.code);
+      handleKeyDown(e, setInput);
+    });
+
+    window.addEventListener("keyup", (e: KeyboardEvent) => {
+      console.log("Keyboard 'keyup' event:", e.code);
       handleKeyUp(
         e,
         setInput as Dispatch<SetStateAction<Partial<PlayerInput>>>,
       );
-
-    window.addEventListener("keydown", handleKeyDownLocal);
-    window.addEventListener("keyup", handleKeyUpLocal);
+    });
 
     return () => {
-      window.removeEventListener("keydown", handleKeyDownLocal);
-      window.removeEventListener("keyup", handleKeyUpLocal);
+      window.removeEventListener("keydown", (e: KeyboardEvent) =>
+        handleKeyDown(e, setInput),
+      );
+      window.removeEventListener("keyup", (e: KeyboardEvent) =>
+        handleKeyUp(
+          e,
+          setInput as Dispatch<SetStateAction<Partial<PlayerInput>>>,
+        ),
+      );
     };
-  }, [handleKeyDown, handleKeyUp]);
+  }, [handleKeyDown, handleKeyUp, setInput]);
 
   // Start animation loop
   useEffect(() => {

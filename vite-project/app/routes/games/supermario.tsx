@@ -92,26 +92,6 @@ function SuperMario() {
     throw new Error("useSuperMario must be used within SuperMarioGameProvider");
   const { status, actions } = context;
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Start/restart game from start status with 'r' key
-      if (e.key.toLowerCase() === "r" && status === "start") {
-        actions.startGame();
-      }
-      // Pause game with ESC
-      if (e.key === "Escape") {
-        if (status === "playing") {
-          actions.pauseGame();
-        } else if (status === "paused") {
-          actions.resumeGame();
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [status, actions]);
-
   // Show start screen when status is "start"
   if (status === "start") {
     return (
