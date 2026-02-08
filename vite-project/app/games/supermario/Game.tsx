@@ -80,7 +80,6 @@ const Game = () => {
   const context = useSuperMario();
   if (!context)
     throw new Error("useSuperMario must be used within SuperMarioGameProvider");
-  const { state, actions } = context;
   const {
     player,
     level,
@@ -92,7 +91,8 @@ const Game = () => {
     coins,
     lives,
     isPaused,
-  } = state;
+    actions,
+  } = context;
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -535,7 +535,7 @@ const Game = () => {
 
       {/* Game Over Overlay */}
       <GameOverOverlay />
-      {status !== "start" && !state.isPaused && <ControlsHelp />}
+      {status !== "start" && !isPaused && <ControlsHelp />}
       <ControlsHelp />
     </GameContainer>
   );

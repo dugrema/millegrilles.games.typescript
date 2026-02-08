@@ -135,11 +135,27 @@ export interface GameState {
 
 // Super Mario context type
 export type SuperMarioContextType = {
-  state: GameState;
+  // State properties - also exposed directly for convenience
+  status: "start" | "playing" | "paused" | "gameover" | "win" | "transition";
+  currentLevel: number;
+  score: number;
+  lives: number;
+  coins: number;
+  time: number;
+  player: Player;
+  level: Level | null;
+  tiles: Tile[];
+  input: PlayerInput;
+  camera: Position;
+  animationFrame: number;
+  isPaused: boolean;
+  gameOverReason: string | null;
+  // Actions object
   actions: {
     restartLevel: () => void;
     pauseGame: () => void;
     resumeGame: () => void;
+    startGame: () => void;
     restartGame: () => void;
   };
 } | null;

@@ -40,9 +40,9 @@ Note: When finishing a phase, always ensure the application can load and the scr
 #### **Phase 1.5: Integration & Polish** ⚠️ IN PROGRESS
 - [x] **Export Provider from supermario directory**
 - [x] **Create route component in routes/games/**
-- [ ] **Fix START GAME button click handler**
-- [ ] **Implement RESTART key to start game from 'start' status**
-- [ ] **Verify game state transitions work correctly**
+- [x] **Fix START GAME button click handler**
+- [x] **Implement RESTART key to start game from 'start' status**
+- [x] **Verify game state transitions work correctly**
 - [ ] **Test basic gameplay loop**
 
 #### **Phase 1.6: Testing & Quality** 🚧 NOT STARTED

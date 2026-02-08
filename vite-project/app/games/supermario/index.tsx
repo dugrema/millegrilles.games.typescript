@@ -244,6 +244,7 @@ export function SuperMarioGameProvider({
   const animationFrameRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
   const tickAccumulatorRef = useRef<number>(0);
+  const animateRef = useRef<((timestamp: number) => void) | null>(null);
 
   // Load level data
   const loadLevel = useCallback(
@@ -270,6 +271,7 @@ export function SuperMarioGameProvider({
       setTiles(LEVEL_1.tiles);
       setPlayer(playerWithLevel);
       setStatus("playing");
+      return LEVEL_1;
     },
     [player],
   );
@@ -623,17 +625,12 @@ export function SuperMarioGameProvider({
   }, [lives, level]);
 
   // Animation loop
-  const animate = useCallback(
+  // Game loop function - stores game logic in refs to avoid stale dependencies
+  const gameLoop = useCallback(
     (timestamp: number) => {
-      if (!lastTimeRef.current) {
-        lastTimeRef.current = timestamp;
-      }
-
       const deltaTime = timestamp - lastTimeRef.current;
       lastTimeRef.current = timestamp;
       tickAccumulatorRef.current += deltaTime;
-
-      // Update animation frame
       animationFrameRef.current += deltaTime;
 
       // Physics updates
@@ -654,10 +651,26 @@ export function SuperMarioGameProvider({
         });
       }
 
-      // Continue animation loop
-      animationFrameId.current = requestAnimationFrame(animate);
+      // Log frame rate info periodically
+      // if (Math.round(timestamp) % 60 === 0) {
+      //   const fps = Math.round(1000 / deltaTime);
+      //   console.log(
+      //     `[Game Loop] Timestamp: ${timestamp} Frame: ${fps} FPS, Delta: ${deltaTime.toFixed(2)}ms, Status: ${status}`,
+      //   );
+      // }
     },
     [status, player, tiles, level, handleInput, applyPhysics],
+  );
+
+  // Animation wrapper - only depends on status
+  const animate = useCallback(
+    (timestamp: number) => {
+      if (status === "playing" && animateRef.current) {
+        animateRef.current(timestamp);
+      }
+      animationFrameId.current = requestAnimationFrame(animate);
+    },
+    [status],
   );
 
   const animationFrameId = useRef<number>(0);
@@ -684,35 +697,35 @@ export function SuperMarioGameProvider({
   useEffect(() => {
     if (status === "playing") {
       lastTimeRef.current = performance.now();
+      // Set the game loop function in the ref
+      animateRef.current = gameLoop;
       animationFrameId.current = requestAnimationFrame(animate);
-    }
-
-    return () => {
+    } else {
+      // Cancel animation loop when game is not playing
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
+        animationFrameId.current = 0;
       }
-    };
-  }, [status, animate]);
+    }
+  }, [status]);
 
   // Context value
-  const contextValue: SuperMarioContextType = useMemo(
+  const contextValue = useMemo(
     () => ({
-      state: {
-        status,
-        currentLevel,
-        score,
-        lives,
-        coins,
-        time: 0,
-        player,
-        level,
-        tiles,
-        input: input as PlayerInput,
-        camera: { x: 0, y: 0 },
-        animationFrame: animationFrameRef.current,
-        isPaused: status === "paused",
-        gameOverReason: null,
-      },
+      status,
+      currentLevel,
+      score,
+      lives,
+      coins,
+      time: 0,
+      player,
+      level,
+      tiles,
+      input: input as PlayerInput,
+      camera: { x: 0, y: 0 },
+      animationFrame: animationFrameRef.current,
+      isPaused: status === "paused",
+      gameOverReason: null,
       actions: actions,
     }),
     [

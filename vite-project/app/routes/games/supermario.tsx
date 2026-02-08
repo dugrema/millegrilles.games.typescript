@@ -1,4 +1,5 @@
 // Route component for Super Mario game with Phase 1.5 integration
+import React, { useEffect } from "react";
 import styled from "styled-components";
 import { SuperMarioGameProvider, useSuperMario } from "../../games/supermario";
 import Game from "../../games/supermario/Game";
@@ -19,53 +20,6 @@ const GameWrapper = styled.div`
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   border-radius: 8px;
   overflow: hidden;
-`;
-
-const StartScreen = styled.div<{ show: boolean }>`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: ${(props) => (props.show ? "flex" : "none")};
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.9);
-  z-index: 50;
-  padding: 20px;
-  text-align: center;
-
-  strong {
-    color: #ffff00;
-    font-size: 28px;
-    margin-bottom: 15px;
-  }
-
-  p {
-    margin: 8px 0;
-    font-size: 16px;
-    color: #fff;
-  }
-
-  button {
-    margin-top: 25px;
-    padding: 12px 35px;
-    font-size: 16px;
-    background: #ff6b6b;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: "Arial Black", sans-serif;
-    text-transform: uppercase;
-    transition: all 0.2s;
-
-    &:hover {
-      background: #ff5252;
-      transform: scale(1.05);
-    }
-  }
 `;
 
 const Header = styled.div`
@@ -116,104 +70,6 @@ const MobileControls = styled.div`
   }
 `;
 
-const Controls = styled.div`
-  position: absolute;
-  bottom: 15px;
-  right: 15px;
-  background: rgba(0, 0, 0, 0.7);
-  padding: 15px;
-  border-radius: 8px;
-  z-index: 25;
-  font-family: "Arial", sans-serif;
-  font-size: 12px;
-  color: #fff;
-  max-width: 200px;
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
-const ControlLabel = styled.div`
-  margin-bottom: 8px;
-
-  strong {
-    color: #ffff00;
-  }
-`;
-
-const ControlRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-
-  span {
-    background: rgba(255, 255, 255, 0.2);
-    padding: 2px 6px;
-    border-radius: 3px;
-    min-width: 30px;
-    text-align: center;
-  }
-`;
-
-const ControlRowWrap = styled.div`
-  display: flex;
-  gap: 4px;
-`;
-
-const StartHint = styled.div`
-  background: rgba(0, 0, 0, 0.8);
-  padding: 20px 30px;
-  border-radius: 8px;
-  color: #fff;
-  text-align: center;
-  margin-bottom: 20px;
-
-  @media (max-width: 768px) {
-    margin-bottom: 0;
-  }
-
-  strong {
-    color: #ffff00;
-    font-size: 18px;
-  }
-
-  p {
-    margin: 10px 0 0 0;
-    font-size: 14px;
-  }
-
-  button {
-    margin-top: 15px;
-    padding: 10px 30px;
-    font-size: 16px;
-    background: #ff6b6b;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-family: "Arial Black", sans-serif;
-    text-transform: uppercase;
-    transition: background 0.2s;
-
-    &:hover {
-      background: #ff5252;
-    }
-
-    &:active {
-      transform: scale(0.98);
-    }
-  }
-
-  @media (max-width: 768px) {
-    button {
-      padding: 8px 20px;
-      font-size: 14px;
-    }
-  }
-`;
-
 // Export metadata
 export function meta() {
   return [
@@ -229,7 +85,109 @@ export function meta() {
   ];
 }
 
-export default function SuperMario() {
+// Inner component that uses the game context
+function SuperMario() {
+  const context = useSuperMario();
+  if (!context)
+    throw new Error("useSuperMario must be used within SuperMarioGameProvider");
+  const { status, actions } = context;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Start/restart game from start status with 'r' key
+      if (e.key.toLowerCase() === "r" && status === "start") {
+        actions.startGame();
+      }
+      // Pause game with ESC
+      if (e.key === "Escape") {
+        if (status === "playing") {
+          actions.pauseGame();
+        } else if (status === "paused") {
+          actions.resumeGame();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [status, actions]);
+
+  // Show start screen when status is "start"
+  if (status === "start") {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "rgba(0, 0, 0, 0.9)",
+          zIndex: 50,
+          padding: "20px",
+          textAlign: "center",
+        }}
+      >
+        <strong
+          style={{ color: "#ffff00", fontSize: "28px", marginBottom: "15px" }}
+        >
+          🍄 SUPER MARIO 🍄
+        </strong>
+        <p style={{ margin: "8px 0", fontSize: "16px", color: "#fff" }}>
+          Platformer Adventure
+        </p>
+        <p style={{ margin: "8px 0", fontSize: "16px", color: "#fff" }}>
+          Press "START" button or press "R" key to begin
+        </p>
+        <button
+          onClick={actions.startGame}
+          style={{
+            marginTop: "25px",
+            padding: "12px 35px",
+            fontSize: "16px",
+            background: "#ff6b6b",
+            color: "#fff",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontFamily: "Arial Black, sans-serif",
+            textTransform: "uppercase",
+            transition: "all 0.2s",
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = "#ff5252";
+            e.currentTarget.style.transform = "scale(1.05)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = "#ff6b6b";
+            e.currentTarget.style.transform = "scale(1)";
+          }}
+        >
+          START GAME
+        </button>
+        <p
+          style={{
+            marginTop: "15px",
+            fontSize: "14px",
+            color: "#aaa",
+          }}
+        >
+          Controls: Arrow Keys to move, SPACE to jump, SHIFT to run
+        </p>
+      </div>
+    );
+  }
+
+  // Show game normally when playing or in other states
+  return <Game />;
+}
+
+// Main route component
+export default function SuperMarioRoute() {
   return (
     <PageContainer>
       <GameWrapper>
@@ -239,7 +197,7 @@ export default function SuperMario() {
         </Header>
 
         <SuperMarioGameProvider>
-          <Game />
+          <SuperMario />
 
           <MobileControls>
             {/* Mobile touch controls would be implemented in Phase 8 */}

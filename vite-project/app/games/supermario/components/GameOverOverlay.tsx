@@ -135,8 +135,8 @@ const PauseIcon = styled.span`
 const GameOverOverlay = () => {
   const context = useSuperMario();
   if (context === null) return null;
-  const { state, actions } = context;
-  const { status, score, lives, level, isPaused, gameOverReason } = state;
+  const { actions, status, score, lives, level, isPaused, gameOverReason } =
+    context;
 
   const getOverlayContent = () => {
     if (status === "gameover") {
