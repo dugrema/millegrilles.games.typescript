@@ -18,12 +18,12 @@ const LEVEL_1_MAP = [
   "                         ",
   "                         ",
   "                  ? ? ?  ",
-  "                   BBBB🚩",
+  "                   BBBBF",
   "      G         ?   BBBB ",
-  "        GG  Q            ",
+  "      C ##  Q            ",
   "                    Q    ",
-  "               E  B    B ",
-  "GGGGGGGGGGGGGGGGGGGGGGGGG",
+  "               E  B  P B ",
+  "GGGGGGGGGGGGGGGGGGGGGUGGG",
 ];
 
 /**
