@@ -74,7 +74,7 @@ export const KEYS = {
   DOWN: "ArrowDown",
   LEFT: "ArrowLeft",
   RIGHT: "ArrowRight",
-  JUMP: " ",
+  JUMP: "Space",
   RUN: "ShiftLeft",
   RESTART: "KeyR",
   ESCAPE: "Escape",

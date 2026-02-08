@@ -48,9 +48,9 @@ Note: When finishing a phase, always ensure the application can load and the scr
 #### **Phase 1.6: Testing & Quality** IN PROGRESS
 - [x] Fix ground on initial map
 - [x] Super Mario Overlay Bug (see PLAN.md)
+- [x] Test level loading
 - [ ] Test movement (left, right, jump, double jump)
 - [ ] Test collision detection
-- [ ] Test level loading
 - [ ] Test game over/win conditions
 - [ ] Verify responsive design
 - [ ] Test audio playback
