@@ -533,10 +533,13 @@ const Game = () => {
         </HUDItem>
       </HUD>
 
-      {/* Game Over Overlay */}
-      <GameOverOverlay />
+      {/* Game Over Overlay - only show when status is paused, gameover, or win */}
+      {(status === "paused" || status === "gameover" || status === "win") && (
+        <GameOverOverlay />
+      )}
+
+      {/* Controls Help - only show when not paused and status is not start */}
       {status !== "start" && !isPaused && <ControlsHelp />}
-      <ControlsHelp />
     </GameContainer>
   );
 };
