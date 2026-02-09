@@ -20,7 +20,6 @@ import type {
   PlayerInput,
   Tile,
   Level,
-  PartialPlayerInput,
 } from "./types";
 import {
   SCREEN_WIDTH,
@@ -170,24 +169,6 @@ export function SuperMarioGameProvider({
   // Level and tiles state
   const [tiles, setTiles] = useState<Tile[]>([]);
 
-  // Combined input state
-  const [input, setInput] = useState<PlayerInput>({
-    left: false,
-    right: false,
-    up: false,
-    down: false,
-    jumpPressed: false,
-    jumpHeld: false,
-    runHeld: false,
-    runPressed: false,
-    escapePressed: false,
-  });
-
-  // Partial update from the keyboard
-  const [partialInput, setPartialInput] = useState<PartialPlayerInput | null>(
-    null,
-  );
-
   // Animation frame and timers
   const animationFrameRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
@@ -258,67 +239,68 @@ export function SuperMarioGameProvider({
   );
 
   // Player input handler
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      const inputMap = {} as PartialPlayerInput;
-
-      // Check for space key for jumping
-      if (e.code === KEYS.JUMP) {
-        inputMap.jumpPressed = true;
-        inputMap.jumpHeld = true;
-      } else if (e.code === KEYS.RUN) {
-        inputMap.runPressed = true;
-        inputMap.runHeld = true;
-      } else if (e.code === KEYS.RESTART) {
-        inputMap.escapePressed = true; // Used to restart
-      } else if (e.code === KEYS.ESCAPE) {
-        inputMap.escapePressed = true; // Used to pause/resume/quit
-      }
-
-      setPartialInput(inputMap);
-    },
-    [setPartialInput],
-  );
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    switch (e.code) {
+      case KEYS.LEFT:
+        keysPressed.current.ArrowLeft = true;
+        break;
+      case KEYS.RIGHT:
+        keysPressed.current.ArrowRight = true;
+        break;
+      case KEYS.UP:
+        keysPressed.current.ArrowUp = true;
+        break;
+      case KEYS.DOWN:
+        keysPressed.current.ArrowDown = true;
+        break;
+      case KEYS.JUMP:
+        keysPressed.current[" "] = true;
+        break;
+      case KEYS.RUN:
+        keysPressed.current.Shift = true;
+        break;
+      case KEYS.RESTART:
+        keysPressed.current["Escape"] = true;
+        break;
+      case KEYS.ESCAPE:
+        keysPressed.current["Escape"] = true;
+        break;
+      default:
+        break;
+    }
+  }, []);
 
   // Keyboard input release handler
-  const handleKeyUp = useCallback(
-    (e: KeyboardEvent) => {
-      const inputMap = {} as PartialPlayerInput;
-      if (e.code === KEYS.LEFT) {
-        inputMap.left = false;
-      } else if (e.code === KEYS.RIGHT) {
-        inputMap.right = false;
-      } else if (e.code === KEYS.UP) {
-        inputMap.up = false;
-      } else if (e.code === KEYS.DOWN) {
-        inputMap.down = false;
-      } else if (e.code === KEYS.RUN) {
-        inputMap.runPressed = false;
-        inputMap.runHeld = false;
-      } else if (e.code === KEYS.JUMP) {
-        inputMap.jumpPressed = false;
-        inputMap.jumpHeld = false;
-      }
-
-      setPartialInput(inputMap);
-    },
-    [setPartialInput],
-  );
-
-  // Handle player input
-  // Phase 6: Update input state from refs for game loop
-  const updateInputState = useCallback(() => {
-    keysPressed.current = {
-      ArrowLeft: input.left,
-      ArrowRight: input.right,
-      ArrowUp: input.up,
-      ArrowDown: input.down,
-      " ": input.jumpPressed,
-      Shift: input.runHeld,
-      r: input.runPressed,
-      Escape: input.escapePressed,
-    };
-  }, [input]);
+  const handleKeyUp = useCallback((e: KeyboardEvent) => {
+    switch (e.code) {
+      case KEYS.LEFT:
+        keysPressed.current.ArrowLeft = false;
+        break;
+      case KEYS.RIGHT:
+        keysPressed.current.ArrowRight = false;
+        break;
+      case KEYS.UP:
+        keysPressed.current.ArrowUp = false;
+        break;
+      case KEYS.DOWN:
+        keysPressed.current.ArrowDown = false;
+        break;
+      case KEYS.JUMP:
+        keysPressed.current[" "] = false;
+        break;
+      case KEYS.RUN:
+        keysPressed.current.Shift = false;
+        break;
+      case KEYS.RESTART:
+        keysPressed.current["Escape"] = false;
+        break;
+      case KEYS.ESCAPE:
+        keysPressed.current["Escape"] = false;
+        break;
+      default:
+        break;
+    }
+  }, []);
 
   // Phase 6: Handle input by reading from refs and updating player refs directly
   const handleInput = useCallback(() => {
@@ -343,7 +325,7 @@ export function SuperMarioGameProvider({
     const isMovingLeft = keysPressed.current["ArrowLeft"];
     const isMovingRight = keysPressed.current["ArrowRight"];
     const isJumping = keysPressed.current[" "] && !keysPressed.current["Shift"];
-    const isRunPressed = keysPressed.current["r"];
+    const isRunPressed = keysPressed.current.Shift;
 
     // Handle horizontal movement
     if (isMovingLeft && !isMovingRight) {
@@ -410,10 +392,7 @@ export function SuperMarioGameProvider({
         soundManager.playDoubleJump();
       }
     }
-
-    // Update input state for game loop
-    updateInputState();
-  }, [player, updateInputState]);
+  }, [player]);
 
   // Apply physics
   const applyPhysics = useCallback((dt: number) => {
@@ -626,9 +605,6 @@ export function SuperMarioGameProvider({
       tickAccumulatorRef.current += deltaTime;
       animationFrameRef.current += deltaTime;
 
-      // Phase 6: Update input state from refs before processing
-      updateInputState();
-
       // Physics updates - Phase 6: Read from refs, write to refs
       if (gameStatus.current === "playing") {
         handleInput();
@@ -655,7 +631,7 @@ export function SuperMarioGameProvider({
       //   );
       // }
     },
-    [updateInputState, handleInput, applyPhysics],
+    [handleInput, applyPhysics],
   );
 
   // Animation wrapper - only depends on status
@@ -693,14 +669,7 @@ export function SuperMarioGameProvider({
       );
       window.removeEventListener("keyup", (e: KeyboardEvent) => handleKeyUp(e));
     };
-  }, [handleKeyDown, handleKeyUp, setInput]);
-
-  // Captures the key input changes and applies them to the input used in the game looop
-  useEffect(() => {
-    if (!partialInput) return; // Avoid recursive loop
-    setPartialInput(null);
-    setInput({ ...input, ...partialInput });
-  }, [input, partialInput, setInput, setPartialInput]);
+  }, [handleKeyDown, handleKeyUp]);
 
   // Start animation loop
   useEffect(() => {

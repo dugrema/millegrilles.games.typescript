@@ -80,19 +80,6 @@ export interface PlayerInput {
   escapePressed: boolean;
 }
 
-// Partial player input state
-export type PartialPlayerInput = {
-  left?: boolean;
-  right?: boolean;
-  up?: boolean;
-  down?: boolean;
-  jumpPressed?: boolean;
-  jumpHeld?: boolean;
-  runHeld?: boolean;
-  runPressed?: boolean;
-  escapePressed?: boolean;
-};
-
 // Tile interface for level data
 export interface Tile {
   id: string;
