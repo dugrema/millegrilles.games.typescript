@@ -39,6 +39,8 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
   /* Keyboard listeners */
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       if (e.key.toLowerCase() === "arrowleft") keysRef.current.left = true;
       if (e.key.toLowerCase() === "arrowright") keysRef.current.right = true;
       if (e.key.toLowerCase() === " ") keysRef.current.jump = true;
@@ -62,18 +64,21 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
     let anim: number = 0;
     const loop = (time: number) => {
       setPlayer((prev) => {
-        // Apply input to acceleration
-        let ax = 0;
-        if (keysRef.current.left) ax -= MOVE_SPEED;
-        if (keysRef.current.right) ax += MOVE_SPEED;
+        // Apply friction (opposes current velocity)
+        let vx = prev.vel.x;
+        // vx -= vx * FRICTION_FACTOR;
 
-        // Apply friction (damping) to gradually stop the player
-        ax += (0 - prev.vel.x) * FRICTION_FACTOR;
+        // Apply input acceleration
+        if (keysRef.current.right) vx += MOVE_SPEED;
+        else if (keysRef.current.left) vx -= MOVE_SPEED;
+        else if (prev.onGround) {
+          if (vx > -0.1 && vx < 0.1) vx = 0.0;
+          else vx -= vx * FRICTION_FACTOR;
+        }
 
-        // Update velocities
-        let vx = prev.vel.x + ax;
-        if (vx > MAX_SPEED) vx = MAX_SPEED;
-        if (vx < -MAX_SPEED) vx = -MAX_SPEED;
+        // Clamp to max speed
+        if (vx > 0) vx = Math.min(MAX_SPEED, vx);
+        else vx = Math.max(-MAX_SPEED, vx);
 
         // Jump
         if (keysRef.current.jump && prev.onGround) {
@@ -92,7 +97,8 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
           vy = 0;
         }
         const onGround = newY >= groundLevel;
-        const finalVx = onGround ? 0 : vx;
+        // const finalVx = onGround ? 0 : vx;
+        const finalVx = vx;
 
         return {
           pos: { x: prev.pos.x + vx, y: newY },
@@ -105,6 +111,7 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
         anim = requestAnimationFrame(loop);
       }
     };
+
     if (running) {
       anim = requestAnimationFrame(loop);
     }
