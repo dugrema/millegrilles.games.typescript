@@ -2,7 +2,19 @@ import styled from "styled-components";
 import { useMinesweeper } from "../index";
 import { FLAG_EMOJI, MINE_EMOJI, DIFFICULTIES } from "../constants";
 
-export default function Cell({ x, y }: { x: number; y: number }) {
+export default function Cell({
+  x,
+  y,
+  "data-x": dataX,
+  "data-y": dataY,
+  onTouchEnd,
+}: {
+  x: number;
+  y: number;
+  "data-x": number;
+  "data-y": number;
+  onTouchEnd?: (e: React.TouchEvent) => void;
+}) {
   const { grid, revealCell, flagCell, gameStatus } = useMinesweeper();
   const cell = grid[y]?.[x];
 
@@ -46,10 +58,24 @@ export default function Cell({ x, y }: { x: number; y: number }) {
     );
   }
 
-  return <HiddenCell onClick={handleClick} onContextMenu={handleContextMenu} />;
+  return (
+    <TouchableHiddenCell
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
+      data-x={dataX}
+      data-y={dataY}
+      onTouchEnd={onTouchEnd}
+    />
+  );
 }
 
-const HiddenCell = styled.div`
+const TouchableHiddenCell = styled.div<{
+  "data-x": number;
+  "data-y": number;
+  onTouchEnd?: (e: React.TouchEvent) => void;
+  onClick?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+}>`
   width: 100%;
   height: 100%;
   background-color: #b0b0b0;
@@ -63,6 +89,13 @@ const HiddenCell = styled.div`
   &:hover {
     background-color: #c0c0c0;
     border-color: #b0b0b0;
+  }
+
+  &[data-x],
+  &[data-y] {
+    @media (pointer: coarse) {
+      -webkit-tap-highlight-color: transparent;
+    }
   }
 `;
 
