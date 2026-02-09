@@ -9,6 +9,7 @@ import {
   JUMP_VELOCITY,
   MOVE_SPEED,
   MAX_SPEED,
+  FRICTION_FACTOR,
   GROUND_Y,
   CANVAS_HEIGHT,
   PLAYER_HEIGHT,
@@ -60,36 +61,42 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
   useEffect(() => {
     let anim: number = 0;
     const loop = (time: number) => {
-      const dt = time - lastTimeRef.current;
-      lastTimeRef.current = time;
-
-      // Apply input to acceleration
-      let ax = 0;
-      if (keysRef.current.left) ax -= MOVE_SPEED;
-      if (keysRef.current.right) ax += MOVE_SPEED;
-
-      // Update velocities
       setPlayer((prev) => {
+        // Apply input to acceleration
+        let ax = 0;
+        if (keysRef.current.left) ax -= MOVE_SPEED;
+        if (keysRef.current.right) ax += MOVE_SPEED;
+
+        // Apply friction (damping) to gradually stop the player
+        ax += (0 - prev.vel.x) * FRICTION_FACTOR;
+
+        // Update velocities
         let vx = prev.vel.x + ax;
         if (vx > MAX_SPEED) vx = MAX_SPEED;
         if (vx < -MAX_SPEED) vx = -MAX_SPEED;
 
         // Jump
         if (keysRef.current.jump && prev.onGround) {
-          vx = prev.vel.x; // keep horizontal velocity when jumping
           return { ...prev, vel: { x: vx, y: JUMP_VELOCITY }, onGround: false };
         }
 
         // Gravity
-        const vy = prev.vel.y + GRAVITY;
+        let vy = prev.vel.y + GRAVITY;
 
-        // Simple ground collision
-        const newY = Math.min(prev.pos.y + vy, CANVAS_HEIGHT - PLAYER_HEIGHT);
-        const onGround = newY >= GROUND_Y - PLAYER_HEIGHT;
+        // Ground collision with push-out and horizontal velocity reset
+        const groundLevel = GROUND_Y - PLAYER_HEIGHT;
+        let newY = prev.pos.y + vy;
+        if (newY > groundLevel) {
+          // Player sank into ground - push them out
+          newY = groundLevel;
+          vy = 0;
+        }
+        const onGround = newY >= groundLevel;
+        const finalVx = onGround ? 0 : vx;
 
         return {
           pos: { x: prev.pos.x + vx, y: newY },
-          vel: { x: vx, y: onGround ? 0 : vy },
+          vel: { x: finalVx, y: onGround ? 0 : vy },
           onGround,
         };
       });

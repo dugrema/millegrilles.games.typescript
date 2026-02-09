@@ -21,20 +21,14 @@ export default function Game() {
 
   /* Simple frame cycling logic.
      Each tick increments the frame, wrapping at 6.
-     The animation runs at the display frame rate. */
+     The animation now runs at a controlled speed using setTimeout. */
   const [frame, setFrame] = useState(0);
   useEffect(() => {
-    let id: number | null = null;
     const tick = () => {
       setFrame((f) => (f + 1) % 6);
-      id = requestAnimationFrame(tick);
+      setTimeout(tick, 150); // 150ms delay = ~4 fps
     };
-    id = requestAnimationFrame(tick);
-    return () => {
-      if (id !== null) {
-        cancelAnimationFrame(id);
-      }
-    };
+    tick();
   }, []);
 
   /* Canvas background rendering (sky + ground). */
