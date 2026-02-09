@@ -13,6 +13,7 @@ import {
   GROUND_Y,
   CANVAS_HEIGHT,
   PLAYER_HEIGHT,
+  MAX_RUN_SPEED,
 } from "./constants";
 
 /* Context creation */
@@ -30,10 +31,16 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
   const lastTimeRef = useRef<number>(0);
 
   /* Key state */
-  const keysRef = useRef<{ left: boolean; right: boolean; jump: boolean }>({
+  const keysRef = useRef<{
+    left: boolean;
+    right: boolean;
+    jump: boolean;
+    run: boolean;
+  }>({
     left: false,
     right: false,
     jump: false,
+    run: false,
   });
 
   /* Keyboard listeners */
@@ -44,12 +51,14 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
       if (e.key.toLowerCase() === "arrowleft") keysRef.current.left = true;
       if (e.key.toLowerCase() === "arrowright") keysRef.current.right = true;
       if (e.key.toLowerCase() === " ") keysRef.current.jump = true;
+      if (e.code === "ShiftLeft") keysRef.current.run = true;
       if (e.key.toLowerCase() === "r") setRunning((prev) => !prev);
     };
     const up = (e: KeyboardEvent) => {
       if (e.key.toLowerCase() === "arrowleft") keysRef.current.left = false;
       if (e.key.toLowerCase() === "arrowright") keysRef.current.right = false;
       if (e.key.toLowerCase() === " ") keysRef.current.jump = false;
+      if (e.code === "ShiftLeft") keysRef.current.run = false;
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -76,9 +85,14 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
           else vx -= vx * FRICTION_FACTOR;
         }
 
+        let maxSpeed = MAX_SPEED;
+        if (keysRef.current.run) {
+          maxSpeed = MAX_RUN_SPEED;
+        }
+
         // Clamp to max speed
-        if (vx > 0) vx = Math.min(MAX_SPEED, vx);
-        else vx = Math.max(-MAX_SPEED, vx);
+        if (vx > 0) vx = Math.min(maxSpeed, vx);
+        else vx = Math.max(-maxSpeed, vx);
 
         // Jump
         if (keysRef.current.jump && prev.onGround) {

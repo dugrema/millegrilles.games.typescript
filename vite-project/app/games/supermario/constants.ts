@@ -2,7 +2,8 @@
 export const GRAVITY = 0.15; // pixels per ms²
 export const JUMP_VELOCITY = -5; // initial velocity on jump
 export const MOVE_SPEED = 0.1; // incremental acceleration per ms
-export const MAX_SPEED = 3; // cap horizontal speed
+export const MAX_SPEED = 3; // cap horizontal walk speed
+export const MAX_RUN_SPEED = 5; // cap horizontal run speed
 export const FRICTION_FACTOR = 0.1; // friction to gradually stop player
 export const GROUND_Y = 300; // Y position of the ground line
 export const CANVAS_WIDTH = 800;
