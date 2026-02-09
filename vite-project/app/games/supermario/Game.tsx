@@ -82,7 +82,7 @@ export default function Game() {
               : "idle"
             : "jumping"
         }
-        x={player.pos.x}
+        x={player.pos.x + player.cameraOffset.x}
         y={player.pos.y}
       />
 

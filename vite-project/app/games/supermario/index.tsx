@@ -14,6 +14,7 @@ import {
   CANVAS_HEIGHT,
   PLAYER_HEIGHT,
   MAX_RUN_SPEED,
+  CANVAS_WIDTH,
 } from "./constants";
 
 /* Context creation */
@@ -25,6 +26,7 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
     pos: { x: 50, y: GROUND_Y - PLAYER_HEIGHT },
     vel: { x: 0, y: 0 },
     onGround: true,
+    cameraOffset: { x: 0, y: 0 },
   });
 
   const [running, setRunning] = useState(false);
@@ -75,7 +77,6 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
       setPlayer((prev) => {
         // Apply friction (opposes current velocity)
         let vx = prev.vel.x;
-        // vx -= vx * FRICTION_FACTOR;
 
         // Apply input acceleration
         if (keysRef.current.right) vx += MOVE_SPEED;
@@ -96,7 +97,12 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
 
         // Jump
         if (keysRef.current.jump && prev.onGround) {
-          return { ...prev, vel: { x: vx, y: JUMP_VELOCITY }, onGround: false };
+          return {
+            ...prev,
+            vel: { x: vx, y: JUMP_VELOCITY },
+            onGround: false,
+            cameraOffset: calculateCameraOffset(prev.pos.x + vx),
+          };
         }
 
         // Gravity
@@ -111,19 +117,28 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
           vy = 0;
         }
         const onGround = newY >= groundLevel;
-        // const finalVx = onGround ? 0 : vx;
-        const finalVx = vx;
 
         return {
           pos: { x: prev.pos.x + vx, y: newY },
-          vel: { x: finalVx, y: onGround ? 0 : vy },
+          vel: { x: vx, y: onGround ? 0 : vy },
           onGround,
+          cameraOffset: calculateCameraOffset(prev.pos.x + vx),
         };
       });
 
       if (running) {
         anim = requestAnimationFrame(loop);
       }
+    };
+
+    /* Helper to calculate camera offset */
+    const calculateCameraOffset = (playerX: number) => {
+      // Keep player in center of screen
+      const targetX = CANVAS_WIDTH / 2 - playerX;
+      // Clamp offset to screen bounds
+      const minX = -playerX; // Player can't go past left edge
+      const maxX = -playerX + CANVAS_WIDTH; // Player can't go past right edge
+      return { x: Math.max(Math.min(targetX, maxX), minX), y: 0 };
     };
 
     if (running) {

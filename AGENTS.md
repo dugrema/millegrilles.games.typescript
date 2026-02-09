@@ -11,7 +11,7 @@ This project provides multiple simple games using client-side javascript and Rea
 * **NEVER** use git. Always ask the user if you need to use git.
 * Use a timeout when starting the server with `npm run dev` to check if the application runs, you need to change to the full path of `vite-project` to run npm commands.
 * Ensure project integrity when finishing a coding/bug fixing cycle
-  * The javascript project is under `millegrilles.games.typescript/vite-project`. Always `cd` to its absolute path before running `npx` or `npm`.
+  * The javascript npm project is under `millegrilles.games.typescript/vite-project`. Always `cd` to its **absolute path** before running `npx` or `npm`.
   * Verify typescript by using `npx tsc --noEmit --jsx react-jsx` (with appropriate parameters, filtering and piping and absolute path tp vite-project/)
   * Use `npm run build` to verify the integrity of the project (absolute paths)
 
@@ -126,10 +126,10 @@ See `PLAN.md` for current phase implementation plan.
 This game is to be a side-scroller similar to the original Super Mario (1). It needs to support desktop and mobile play, multiple zones (stages), sounds, and saves the current progress in localStorage. 
 
 ## Super Mario Development paths
-- **Route**: `/vite-project/app/routes/games/supermario.tsx`
-- **Game folder**: `/vite-project/app/games/supermario`
-- **Types**: `/vite-project/app/games/supermario/types.ts`
-- **Constants**: `/vite-project/app/games/supermario/constants.ts`
+- **Route**: `millegrilles.games.typescript/vite-project/app/routes/games/supermario.tsx`
+- **Game folder**: `millegrilles.games.typescript/vite-project/app/games/supermario`
+- **Types**: `millegrilles.games.typescript/vite-project/app/games/supermario/types.ts`
+- **Constants**: `millegrilles.games.typescript/vite-project/app/games/supermario/constants.ts`
 
 The React Router configuration is out of scope for this task, **DO NOT MODIFY ROUTES**.
 
