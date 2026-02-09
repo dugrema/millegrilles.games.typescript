@@ -6,5 +6,5 @@ export const MAX_SPEED = 3; // cap horizontal speed
 export const GROUND_Y = 300; // Y position of the ground line
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 400;
-export const PLAYER_WIDTH = 25;
-export const PLAYER_HEIGHT = 40;
+export const PLAYER_WIDTH = 64;
+export const PLAYER_HEIGHT = 64;
