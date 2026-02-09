@@ -20,8 +20,7 @@ const LivesDisplay = () => {
   const context = useSuperMario();
   if (!context)
     throw new Error("useSuperMario must be used within SuperMarioGameProvider");
-  const { state } = context;
-  const { lives } = state;
+  const { lives } = context;
 
   return (
     <LivesContainer>

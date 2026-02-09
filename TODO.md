@@ -37,15 +37,16 @@ Note: When finishing a phase, always ensure the application can load and the scr
 - [x] **Implement level/world rendering**
 - [x] **Handle keyboard input and state updates**
 
-#### **Phase 1.5: Integration & Polish** ✅ COMPLETED
+#### **Phase 1.5: Integration & Polish** IN PROGRESS
 - [x] **Export Provider from supermario directory**
 - [x] **Create route component in routes/games/**
 - [x] **Fix START GAME button click handler**
 - [x] **Implement RESTART key to start game from 'start' status**
 - [x] **Verify game state transitions work correctly**
 - [x] **Test basic gameplay loop**
+- [ ] Fix Stale State in GameLoop
 
-#### **Phase 1.6: Testing & Quality** IN PROGRESS
+#### **Phase 1.6: Testing & Quality**
 - [x] Fix ground on initial map
 - [x] Super Mario Overlay Bug (see PLAN.md)
 - [x] Test level loading

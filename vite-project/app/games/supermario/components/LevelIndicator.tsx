@@ -36,8 +36,7 @@ const LevelIndicator = () => {
   const context = useSuperMario();
   if (!context)
     throw new Error("useSuperMario must be used within SuperMarioGameProvider");
-  const { state } = context;
-  const { currentLevel, level, score, coins, time } = state;
+  const { currentLevel, level, score, coins, time } = context;
 
   const levelName = level?.name || `World ${currentLevel}-1`;
 

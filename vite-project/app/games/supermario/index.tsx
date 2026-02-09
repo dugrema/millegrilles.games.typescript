@@ -145,9 +145,7 @@ export function SuperMarioGameProvider({
     "start" | "playing" | "paused" | "gameover" | "win"
   >("start");
   const [currentLevel, setCurrentLevel] = useState(1);
-  const [score, setScore] = useState(INITIAL_SCORE);
   const [lives, setLives] = useState(INITIAL_LIVES);
-  const [coins, setCoins] = useState(0);
 
   // Player state
   const [player, setPlayer] = useState<Player>({
@@ -169,8 +167,7 @@ export function SuperMarioGameProvider({
     coins: 0,
   });
 
-  // Level and tiles
-  const [level, setLevel] = useState<Level | null>(null);
+  // Level and tiles state
   const [tiles, setTiles] = useState<Tile[]>([]);
 
   // Combined input state
@@ -185,6 +182,7 @@ export function SuperMarioGameProvider({
     runPressed: false,
     escapePressed: false,
   });
+
   // Partial update from the keyboard
   const [partialInput, setPartialInput] = useState<PartialPlayerInput | null>(
     null,
@@ -196,35 +194,38 @@ export function SuperMarioGameProvider({
   const tickAccumulatorRef = useRef<number>(0);
   const animateRef = useRef<((timestamp: number) => void) | null>(null);
 
+  // Mutable game state refs (Phase 6 Stale State Fix)
+  const playerX = useRef(0);
+  const playerY = useRef(0);
+  const playerVx = useRef(0);
+  const playerVy = useRef(0);
+  const keysPressed = useRef<Record<string, boolean>>({});
+  const gameStatus = useRef<
+    "start" | "playing" | "paused" | "gameover" | "win"
+  >("start");
+  const score = useRef(INITIAL_SCORE);
+  const coins = useRef(0);
+  const level = useRef<Level | null>(null);
+  const cameraX = useRef(0);
+
   // Load level data
-  const loadLevel = useCallback(
-    (levelNum: number) => {
-      const tileSize = LEVEL_1.tileSize;
+  const loadLevel = useCallback((levelNum: number) => {
+    const tileSize = LEVEL_1.tileSize;
 
-      // Create player at start position
-      const playerWithLevel: Player = {
-        ...player,
-        position: { x: LEVEL_1.startPos.x, y: LEVEL_1.startPos.y },
-        velocity: { x: 0, y: 0 },
-        state: "idle",
-        animation: "normal",
-        animationFrame: 0,
-        isGrounded: false,
-        isDead: false,
-        isRunning: false,
-        canDoubleJump: true,
-        score: INITIAL_SCORE,
-        coins: 0,
-      };
+    // Initialize player refs with level start position (Phase 6 Stale State Fix)
+    playerX.current = LEVEL_1.startPos.x;
+    playerY.current = LEVEL_1.startPos.y;
+    playerVx.current = 0;
+    playerVy.current = 0;
+    keysPressed.current = {};
+    gameStatus.current = "playing";
+    score.current = INITIAL_SCORE;
+    coins.current = 0;
+    level.current = LEVEL_1;
+    cameraX.current = 0;
 
-      setLevel(LEVEL_1);
-      setTiles(LEVEL_1.tiles);
-      setPlayer(playerWithLevel);
-      setStatus("playing");
-      return LEVEL_1;
-    },
-    [player],
-  );
+    return LEVEL_1;
+  }, []);
 
   // Player game actions
   const actions = useMemo(
@@ -244,8 +245,6 @@ export function SuperMarioGameProvider({
       },
       restartGame: () => {
         setLives(INITIAL_LIVES);
-        setScore(INITIAL_SCORE);
-        setCoins(0);
         loadLevel(1);
       },
       startGame: () => {
@@ -263,25 +262,13 @@ export function SuperMarioGameProvider({
     (e: KeyboardEvent) => {
       const inputMap = {} as PartialPlayerInput;
 
-      if (Object.values(KEYS).includes(e.code)) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-
-      if (e.code === KEYS.LEFT) {
-        inputMap.left = true;
-      } else if (e.code === KEYS.RIGHT) {
-        inputMap.right = true;
-      } else if (e.code === KEYS.UP) {
-        inputMap.up = true;
-      } else if (e.code === KEYS.DOWN) {
-        inputMap.down = true;
+      // Check for space key for jumping
+      if (e.code === KEYS.JUMP) {
+        inputMap.jumpPressed = true;
+        inputMap.jumpHeld = true;
       } else if (e.code === KEYS.RUN) {
         inputMap.runPressed = true;
         inputMap.runHeld = true;
-      } else if (e.code === KEYS.JUMP) {
-        inputMap.jumpPressed = true;
-        inputMap.jumpHeld = true;
       } else if (e.code === KEYS.RESTART) {
         inputMap.escapePressed = true; // Used to restart
       } else if (e.code === KEYS.ESCAPE) {
@@ -290,9 +277,10 @@ export function SuperMarioGameProvider({
 
       setPartialInput(inputMap);
     },
-    [setPartialInput], // Dependencies: setInput from the game context
+    [setPartialInput],
   );
 
+  // Keyboard input release handler
   const handleKeyUp = useCallback(
     (e: KeyboardEvent) => {
       const inputMap = {} as PartialPlayerInput;
@@ -307,277 +295,298 @@ export function SuperMarioGameProvider({
       } else if (e.code === KEYS.RUN) {
         inputMap.runPressed = false;
         inputMap.runHeld = false;
+      } else if (e.code === KEYS.JUMP) {
+        inputMap.jumpPressed = false;
+        inputMap.jumpHeld = false;
       }
+
       setPartialInput(inputMap);
     },
     [setPartialInput],
   );
 
   // Handle player input
+  // Phase 6: Update input state from refs for game loop
+  const updateInputState = useCallback(() => {
+    keysPressed.current = {
+      ArrowLeft: input.left,
+      ArrowRight: input.right,
+      ArrowUp: input.up,
+      ArrowDown: input.down,
+      " ": input.jumpPressed,
+      Shift: input.runHeld,
+      r: input.runPressed,
+      Escape: input.escapePressed,
+    };
+  }, [input]);
+
+  // Phase 6: Handle input by reading from refs and updating player refs directly
   const handleInput = useCallback(() => {
-    // Note: start/pause/resume occurs outside the game loop in routes/games/supermario.tsx.
+    // Phase 6: Read game status from ref
+    const currentStatus = gameStatus.current;
 
     // Handle restart in game over state
-    if (status === "gameover" && input.escapePressed) {
+    if (currentStatus === "gameover" && keysPressed.current["Escape"]) {
+      gameStatus.current = "start";
       setStatus("start");
-      actions.pauseGame();
       return;
     }
 
-    if (status === "paused" || status === "gameover" || status === "win")
+    if (
+      currentStatus === "paused" ||
+      currentStatus === "gameover" ||
+      currentStatus === "win"
+    )
       return;
 
-    const newState: Partial<Player> = {
-      position: { x: 0, y: 0 },
-      velocity: { x: 0, y: 0 },
-    };
-    const newStateInput: PlayerInput = {
-      left: false,
-      right: false,
-      up: false,
-      down: false,
-      jumpPressed: false,
-      jumpHeld: false,
-      runHeld: false,
-      runPressed: false,
-      escapePressed: false,
-    };
-
-    const isMovingLeft = input.left;
-    const isMovingRight = input.right;
-    const isJumping = input.jumpPressed && !input.jumpHeld;
+    // Read input from keysPressed ref
+    const isMovingLeft = keysPressed.current["ArrowLeft"];
+    const isMovingRight = keysPressed.current["ArrowRight"];
+    const isJumping = keysPressed.current[" "] && !keysPressed.current["Shift"];
+    const isRunPressed = keysPressed.current["r"];
 
     // Handle horizontal movement
     if (isMovingLeft && !isMovingRight) {
-      newStateInput.left = true;
-      newStateInput.right = false;
       if (player.state === "idle" || player.state === "walk") {
-        newState.direction = "left";
-        newState.animation = "left";
-        if (input.runHeld) {
-          newState.state = "run";
-          newState.isRunning = true;
+        player.direction = "left";
+        player.animation = "left";
+        if (keysPressed.current["Shift"]) {
+          player.state = "run";
+          player.isRunning = true;
         } else {
-          newState.state = "walk";
-          newState.isRunning = false;
+          player.state = "walk";
+          player.isRunning = false;
         }
       } else if (player.state !== "jump") {
-        newState.state = "walk";
-        newState.isRunning = false;
+        player.state = "walk";
+        player.isRunning = false;
       }
     } else if (isMovingRight && !isMovingLeft) {
-      newStateInput.right = true;
-      newStateInput.left = false;
       if (player.state === "idle" || player.state === "walk") {
-        newState.direction = "right";
-        newState.animation = "right";
-        if (input.runHeld) {
-          newState.state = "run";
-          newState.isRunning = true;
+        player.direction = "right";
+        player.animation = "right";
+        if (keysPressed.current["Shift"]) {
+          player.state = "run";
+          player.isRunning = true;
         } else {
-          newState.state = "walk";
-          newState.isRunning = false;
+          player.state = "walk";
+          player.isRunning = false;
         }
       } else if (player.state !== "jump") {
-        newState.state = "walk";
-        newState.isRunning = false;
+        player.state = "walk";
+        player.isRunning = false;
       }
     } else {
       // No horizontal input
-      newStateInput.left = false;
-      newStateInput.right = false;
       if (
         player.state === "idle" ||
         player.state === "walk" ||
         player.state === "run"
       ) {
-        newState.state = "idle";
-        newState.isRunning = false;
+        player.state = "idle";
+        player.isRunning = false;
       }
     }
 
     // Running is controlled by the physics system
-    // The runPressed flag just indicates the user wants to run
+    // The runHeld flag just indicates the user wants to run
     // Actual running happens in applyPhysics based on input flags
 
     // Handle jumping
     if (isJumping) {
       if (player.isGrounded) {
         // First jump
-        (newState as Player).velocity.y = JUMP.force;
-        newState.isGrounded = false;
-        newState.state = "jump";
-        newState.animation = player.direction === "left" ? "left" : "right";
+        playerVy.current = JUMP.force;
+        player.isGrounded = false;
+        player.state = "jump";
+        player.animation = player.direction === "left" ? "left" : "right";
         soundManager.playJump();
       } else if (player.canDoubleJump) {
         // Double jump
-        (newState as Player).velocity.y = JUMP.force * 0.9;
-        newState.canDoubleJump = false;
-        newState.state = "doubleJump";
-        newState.animation = player.direction === "left" ? "left" : "right";
+        playerVy.current = JUMP.force * 0.9;
+        player.canDoubleJump = false;
+        player.state = "doubleJump";
+        player.animation = player.direction === "left" ? "left" : "right";
         soundManager.playDoubleJump();
       }
     }
 
-    // Update player input
-    setInput(newStateInput as PlayerInput);
-    setPlayer((prev) => ({ ...prev, ...newState }));
-  }, [status, input, player, actions]);
+    // Update input state for game loop
+    updateInputState();
+  }, [player, updateInputState]);
 
   // Apply physics
-  const applyPhysics = useCallback(
-    (dt: number) => {
-      if (status !== "playing" || player.isDead) return;
+  const applyPhysics = useCallback((dt: number) => {
+    // Phase 6: Read game status from ref
+    const currentStatus = gameStatus.current;
+    if (currentStatus !== "playing") return;
 
-      const playerState = player;
-      let nextX = playerState.position.x + playerState.velocity.x;
-      let nextY = playerState.position.y + playerState.velocity.y;
-      const isMovingHorizontally = playerState.velocity.x !== 0;
-      const isRunning = playerState.isRunning;
-      const direction = playerState.direction;
+    // Phase 6: Read player state from refs (no React state batching)
+    const playerState = {
+      position: { x: playerX.current, y: playerY.current },
+      velocity: { x: playerVx.current, y: playerVy.current },
+      direction: player.direction,
+      state: player.state,
+      isGrounded: player.isGrounded,
+      isRunning: player.isRunning,
+      canDoubleJump: player.canDoubleJump,
+      isDead: player.isDead,
+      dimensions: player.dimensions,
+      score: player.score,
+      lives: player.lives,
+      coins: player.coins,
+      animationFrame: player.animationFrame,
+    };
+    let nextX = playerState.position.x + playerState.velocity.x;
+    let nextY = playerState.position.y + playerState.velocity.y;
+    const isMovingHorizontally = playerState.velocity.x !== 0;
+    const isRunning = playerState.isRunning;
+    const direction = playerState.direction;
 
-      // Calculate target speed
-      let targetSpeed = isRunning ? MOVEMENT.runSpeed : MOVEMENT.maxSpeed;
+    // Calculate target speed
+    let targetSpeed = isRunning ? MOVEMENT.runSpeed : MOVEMENT.maxSpeed;
 
-      // Apply acceleration
-      if (isMovingHorizontally) {
-        if (playerState.velocity.x < 0) {
-          playerState.velocity.x -= MOVEMENT.acceleration;
-        } else {
-          playerState.velocity.x += MOVEMENT.acceleration;
-        }
-      }
-
-      // Apply friction
-      if (!playerState.isGrounded) {
-        playerState.velocity.x *= MOVEMENT.airResistance;
+    // Apply acceleration
+    if (isMovingHorizontally) {
+      if (playerState.velocity.x < 0) {
+        playerState.velocity.x -= MOVEMENT.acceleration;
       } else {
-        playerState.velocity.x *= MOVEMENT.friction;
+        playerState.velocity.x += MOVEMENT.acceleration;
       }
+    }
 
-      // Clamp speed
-      const maxSpeed =
-        isRunning && playerState.isGrounded
-          ? MOVEMENT.maxSpeed + MOVEMENT.runBoost
-          : MOVEMENT.maxSpeed;
-      playerState.velocity.x = Math.max(
-        -maxSpeed,
-        Math.min(maxSpeed, playerState.velocity.x),
-      );
+    // Apply friction
+    if (!playerState.isGrounded) {
+      playerState.velocity.x *= MOVEMENT.airResistance;
+    } else {
+      playerState.velocity.x *= MOVEMENT.friction;
+    }
 
-      // Apply gravity
-      playerState.velocity.y += GRAVITY.acceleration;
+    // Clamp speed
+    const maxSpeed =
+      isRunning && playerState.isGrounded
+        ? MOVEMENT.maxSpeed + MOVEMENT.runBoost
+        : MOVEMENT.maxSpeed;
+    playerState.velocity.x = Math.max(
+      -maxSpeed,
+      Math.min(maxSpeed, playerState.velocity.x),
+    );
 
-      // Collision detection
-      const playerBounds = {
-        left: nextX,
-        right: nextX + playerState.dimensions.width,
-        top: nextY,
-        bottom: nextY + playerState.dimensions.height,
-      };
+    // Apply gravity
+    playerState.velocity.y += GRAVITY.acceleration;
 
-      let collisionOccurred = false;
+    // Collision detection
+    const playerBounds = {
+      left: nextX,
+      right: nextX + playerState.dimensions.width,
+      top: nextY,
+      bottom: nextY + playerState.dimensions.height,
+    };
 
-      // Check tile collisions
-      for (const tile of tiles) {
-        if (!tile.solid) continue;
+    let collisionOccurred = false;
 
-        if (
-          playerBounds.left < tile.position.x + tile.dimensions.width &&
-          playerBounds.right > tile.position.x &&
-          playerBounds.top < tile.position.y + tile.dimensions.height &&
-          playerBounds.bottom > tile.position.y
-        ) {
+    // Phase 6: Get tiles from level ref
+    const currentTiles = level.current?.tiles || [];
+
+    // Check tile collisions
+    for (const tile of currentTiles) {
+      if (!tile.solid) continue;
+
+      if (
+        playerBounds.left < tile.position.x + tile.dimensions.width &&
+        playerBounds.right > tile.position.x &&
+        playerBounds.top < tile.position.y + tile.dimensions.height &&
+        playerBounds.bottom > tile.position.y
+      ) {
+        // Horizontal collision
+        const tileBounds = {
+          left: tile.position.x,
+          right: tile.position.x + tile.dimensions.width,
+          top: tile.position.y,
+          bottom: tile.position.y + tile.dimensions.height,
+        };
+
+        const horizontalOverlap =
+          Math.min(playerBounds.right, tileBounds.right) -
+          Math.max(playerBounds.left, tileBounds.left);
+        const verticalOverlap =
+          Math.min(playerBounds.bottom, tileBounds.bottom) -
+          Math.max(playerBounds.top, tileBounds.top);
+
+        if (horizontalOverlap < verticalOverlap) {
           // Horizontal collision
-          const tileBounds = {
-            left: tile.position.x,
-            right: tile.position.x + tile.dimensions.width,
-            top: tile.position.y,
-            bottom: tile.position.y + tile.dimensions.height,
-          };
-
-          const horizontalOverlap =
-            Math.min(playerBounds.right, tileBounds.right) -
-            Math.max(playerBounds.left, tileBounds.left);
-          const verticalOverlap =
-            Math.min(playerBounds.bottom, tileBounds.bottom) -
-            Math.max(playerBounds.top, tileBounds.top);
-
-          if (horizontalOverlap < verticalOverlap) {
-            // Horizontal collision
-            if (playerState.velocity.x > 0) {
-              nextX = tile.position.x - playerState.dimensions.width;
-            } else if (playerState.velocity.x < 0) {
-              nextX = tile.position.x + tile.dimensions.width;
-            }
-            playerState.velocity.x = 0;
-          } else {
-            // Vertical collision
-            if (playerState.velocity.y > 0) {
-              // Landing on ground
-              nextY = tile.position.y - playerState.dimensions.height;
-              playerState.velocity.y = 0;
-              if (!playerState.isGrounded) {
-                playerState.state = "land";
-                playerState.animationFrame = 0;
-              }
-              playerState.isGrounded = true;
-            } else if (playerState.velocity.y < 0) {
-              // Hitting ceiling
-              nextY = tile.position.y + tile.dimensions.height;
-              playerState.velocity.y = 0;
-            }
+          if (playerState.velocity.x > 0) {
+            nextX = tile.position.x - playerState.dimensions.width;
+          } else if (playerState.velocity.x < 0) {
+            nextX = tile.position.x + tile.dimensions.width;
           }
-
-          collisionOccurred = true;
-
-          // Handle special tile types
-          if (tile.type === "coin") {
-            tile.type = "coin_item";
-            tile.solid = false;
-            tile.dimensions.height = playerState.dimensions.height * 1.5;
-            tile.position.y -= tile.dimensions.height;
-            setCoins((prev) => prev + 1);
-            setScore((prev) => prev + SCORE_VALUES.COIN);
-            soundManager.playCoin();
-          }
-        }
-      }
-
-      // Update position
-      if (!collisionOccurred) {
-        playerState.position.x = nextX;
-        playerState.position.y = nextY;
-      }
-
-      // Check if player fell off level
-      if (playerState.position.y > CANVAS_HEIGHT + PLAYER_HEIGHT * 2) {
-        handlePlayerDeath();
-        return;
-      }
-
-      // Update state based on movement
-      if (playerState.isGrounded) {
-        if (Math.abs(playerState.velocity.x) > 1) {
-          playerState.state = isRunning ? "run" : "walk";
+          playerState.velocity.x = 0;
         } else {
-          playerState.state = "idle";
+          // Vertical collision
+          if (playerState.velocity.y > 0) {
+            // Landing on ground
+            nextY = tile.position.y - playerState.dimensions.height;
+            playerState.velocity.y = 0;
+            if (!playerState.isGrounded) {
+              playerState.state = "land";
+              playerState.animationFrame = 0;
+            }
+            playerState.isGrounded = true;
+          } else if (playerState.velocity.y < 0) {
+            // Hitting ceiling
+            nextY = tile.position.y + tile.dimensions.height;
+            playerState.velocity.y = 0;
+          }
         }
-      } else if (playerState.velocity.y < 0) {
-        playerState.state = "jump";
+
+        collisionOccurred = true;
+
+        // Phase 6: Handle special tile types - update coins and score refs
+        if (tile.type === "coin") {
+          tile.type = "coin_item";
+          tile.solid = false;
+          tile.dimensions.height = playerState.dimensions.height * 1.5;
+          tile.position.y -= tile.dimensions.height;
+          coins.current = coins.current + 1;
+          score.current = score.current + SCORE_VALUES.COIN;
+          soundManager.playCoin();
+        }
+      }
+    }
+
+    // Phase 6: Update position refs
+    if (!collisionOccurred) {
+      playerX.current = nextX;
+      playerY.current = nextY;
+    }
+
+    // Phase 6: Check if player fell off level
+    if (playerState.position.y > CANVAS_HEIGHT + PLAYER_HEIGHT * 2) {
+      handlePlayerDeath();
+      return;
+    }
+
+    // Phase 6: Update state based on movement
+    if (playerState.isGrounded) {
+      if (Math.abs(playerState.velocity.x) > 1) {
+        playerState.state = isRunning ? "run" : "walk";
       } else {
-        playerState.state = "fall";
+        playerState.state = "idle";
       }
+    } else if (playerState.velocity.y < 0) {
+      playerState.state = "jump";
+    } else {
+      playerState.state = "fall";
+    }
 
-      // Check end position (flag reached)
-      if (level?.endPos?.x && playerState.position.x > level.endPos.x) {
-        setStatus("win");
-      }
-
-      setPlayer(playerState);
-    },
-    [status, player, tiles, level],
-  );
+    // Phase 6: Check end position (flag reached)
+    if (
+      level.current?.endPos?.x &&
+      playerState.position.x > level.current.endPos.x
+    ) {
+      gameStatus.current = "win";
+    }
+  }, []);
 
   // Handle player death
   const handlePlayerDeath = useCallback(() => {
@@ -593,7 +602,9 @@ export function SuperMarioGameProvider({
       setLives(lives - 1);
       player.isDead = false;
       if (lives > 0) {
-        player.position = { ...(level?.startPos || { x: 100, y: 400 }) };
+        player.position = {
+          ...(level.current?.startPos || { x: 100, y: 400 }),
+        };
         player.velocity = { x: 0, y: 0 };
         player.state = "idle";
         player.isGrounded = false;
@@ -604,10 +615,10 @@ export function SuperMarioGameProvider({
     }, 2000);
 
     setPlayer(player);
-  }, [lives, level]);
+  }, [lives, level, player]);
 
   // Animation loop
-  // Game loop function - stores game logic in refs to avoid stale dependencies
+  // Game loop function - Phase 6: Uses refs to avoid stale dependencies
   const gameLoop = useCallback(
     (timestamp: number) => {
       const deltaTime = timestamp - lastTimeRef.current;
@@ -615,17 +626,20 @@ export function SuperMarioGameProvider({
       tickAccumulatorRef.current += deltaTime;
       animationFrameRef.current += deltaTime;
 
-      // Physics updates
-      if (status === "playing") {
+      // Phase 6: Update input state from refs before processing
+      updateInputState();
+
+      // Physics updates - Phase 6: Read from refs, write to refs
+      if (gameStatus.current === "playing") {
         handleInput();
         applyPhysics(deltaTime);
 
         // Update enemy positions (simplified)
-        tiles.forEach((tile, index) => {
+        level.current?.tiles.forEach((tile, index) => {
           if (tile.type === "goomba") {
             // Simple enemy movement - just move back and forth
             const currentTileY =
-              Math.round(player.position.y / TILE_SIZE) * TILE_SIZE;
+              Math.round(playerY.current / TILE_SIZE) * TILE_SIZE;
 
             // Basic enemy logic could go here
             // For Phase 1, enemies will be visual only
@@ -637,11 +651,11 @@ export function SuperMarioGameProvider({
       // if (Math.round(timestamp) % 60 === 0) {
       //   const fps = Math.round(1000 / deltaTime);
       //   console.log(
-      //     `[Game Loop] Timestamp: ${timestamp} Frame: ${fps} FPS, Delta: ${deltaTime.toFixed(2)}ms, Status: ${status}`,
+      //     `[Game Loop] Timestamp: ${timestamp} Frame: ${fps} FPS, Delta: ${deltaTime.toFixed(2)}ms, Status: ${gameStatus.current}`,
       //   );
       // }
     },
-    [status, player, tiles, level, handleInput, applyPhysics],
+    [updateInputState, handleInput, applyPhysics],
   );
 
   // Animation wrapper - only depends on status
@@ -704,38 +718,40 @@ export function SuperMarioGameProvider({
     }
   }, [status]);
 
-  // Context value
+  // Phase 6: Context value - computed from refs to avoid stale state
   const contextValue = useMemo(
     () => ({
-      status,
+      status: gameStatus.current,
       currentLevel,
-      score,
+      score: score.current,
       lives,
-      coins,
+      coins: coins.current,
       time: 0,
-      player,
-      level,
-      tiles,
-      input: input as PlayerInput,
-      camera: { x: 0, y: 0 },
+      player: {
+        ...player,
+        position: { x: playerX.current, y: playerY.current },
+        velocity: { x: playerVx.current, y: playerVy.current },
+      },
+      level: level.current,
+      tiles: level.current?.tiles || [],
+      input: {
+        left: keysPressed.current["ArrowLeft"],
+        right: keysPressed.current["ArrowRight"],
+        up: keysPressed.current["ArrowUp"],
+        down: keysPressed.current["ArrowDown"],
+        jumpPressed: keysPressed.current[" "],
+        jumpHeld: keysPressed.current["Shift"],
+        runHeld: keysPressed.current["Shift"],
+        runPressed: keysPressed.current["r"],
+        escapePressed: keysPressed.current["Escape"],
+      } as PlayerInput,
+      camera: { x: cameraX.current, y: 0 },
       animationFrame: animationFrameRef.current,
-      isPaused: status === "paused",
+      isPaused: gameStatus.current === "paused",
       gameOverReason: null,
       actions: actions,
     }),
-    [
-      status,
-      currentLevel,
-      score,
-      lives,
-      coins,
-      player,
-      level,
-      tiles,
-      input,
-      loadLevel,
-      actions,
-    ],
+    [currentLevel, lives, actions],
   );
 
   return (
