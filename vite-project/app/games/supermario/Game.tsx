@@ -8,6 +8,8 @@ import {
   CANVAS_HEIGHT,
 } from "./constants";
 import Mario from "./sprites/Mario";
+import LevelBlocks from "./components/levelblocks/LevelBlocks";
+import { levelConfig as simpleGroundLevel } from "./levels/SimpleGround";
 
 /**
  * Main Super Mario game component.
@@ -17,11 +19,12 @@ import Mario from "./sprites/Mario";
  */
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { startGame, pauseGame, player } = useSuperMario();
+  const { startGame, pauseGame, player, loadLevel, blocks, currentLevel } =
+    useSuperMario();
 
   /* Simple frame cycling logic.
-     Each tick increments the frame, wrapping at 6.
-     The animation now runs at a controlled speed using setTimeout. */
+ Each tick increments the frame, wrapping at 6.
+ The animation now runs at a controlled speed using setTimeout. */
   const [frame, setFrame] = useState(0);
   useEffect(() => {
     const tick = () => {
@@ -72,6 +75,9 @@ export default function Game() {
         height={CANVAS_HEIGHT}
         style={{ border: "1px solid #333" }}
       />
+      {/* Render level blocks on top of the canvas. */}
+      <LevelBlocks blocks={blocks} />
+
       {/* Render the animated Mario sprite on top of the canvas. */}
       <Mario
         frame={frame}
@@ -87,10 +93,21 @@ export default function Game() {
       />
 
       <div style={{ marginTop: "8px" }}>
+        {currentLevel?.name && (
+          <div style={{ marginBottom: "8px" }}>Level: {currentLevel.name}</div>
+        )}
         <button onClick={startGame}>Start</button>
         <button onClick={pauseGame} style={{ marginLeft: "8px" }}>
           Pause
         </button>
+        {blocks.length > 0 && (
+          <button
+            onClick={() => loadLevel(simpleGroundLevel)}
+            style={{ marginLeft: "8px" }}
+          >
+            Load Level
+          </button>
+        )}
       </div>
     </div>
   );

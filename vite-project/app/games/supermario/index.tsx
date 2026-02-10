@@ -2,6 +2,8 @@ import type {
   SuperMarioContext,
   SuperMarioProviderProps,
   PlayerState,
+  LevelConfig,
+  Block,
 } from "./types";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
@@ -15,7 +17,10 @@ import {
   PLAYER_HEIGHT,
   MAX_RUN_SPEED,
   CANVAS_WIDTH,
+  BLOCK_SIZE,
+  PLAYER_WIDTH,
 } from "./constants";
+import { parseLevelConfig } from "./utils/LevelParser";
 
 /* Context creation */
 const SuperMarioContext = createContext<SuperMarioContext | null>(null);
@@ -28,6 +33,9 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
     onGround: true,
     cameraOffset: { x: 0, y: 0 },
   });
+
+  const [currentLevel, setCurrentLevel] = useState<LevelConfig | null>(null);
+  const [blocks, setBlocks] = useState<Block[]>([]);
 
   const [running, setRunning] = useState(false);
   const lastTimeRef = useRef<number>(0);
@@ -151,8 +159,23 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
   const startGame = () => setRunning(true);
   const pauseGame = () => setRunning(false);
 
+  const loadLevel = (levelConfig: LevelConfig) => {
+    setCurrentLevel(levelConfig);
+    const parsedBlocks = parseLevelConfig(levelConfig);
+    setBlocks(parsedBlocks);
+    // Reset player position when loading a new level
+    setPlayer({
+      pos: { x: levelConfig.playerStartX || 0, y: GROUND_Y - PLAYER_HEIGHT },
+      vel: { x: 0, y: 0 },
+      onGround: true,
+      cameraOffset: { x: 0, y: 0 },
+    });
+  };
+
   return (
-    <SuperMarioContext.Provider value={{ player, startGame, pauseGame }}>
+    <SuperMarioContext.Provider
+      value={{ player, startGame, pauseGame, loadLevel, currentLevel, blocks }}
+    >
       {children}
     </SuperMarioContext.Provider>
   );

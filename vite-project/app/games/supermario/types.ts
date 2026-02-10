@@ -15,9 +15,33 @@ export interface SuperMarioContext {
   player: PlayerState;
   startGame: () => void;
   pauseGame: () => void;
+  loadLevel: (levelConfig: LevelConfig) => void;
+  currentLevel: LevelConfig | null;
+  blocks: Block[];
 }
 
 /* Props for the provider */
 export interface SuperMarioProviderProps {
   children: ReactNode;
+}
+
+/* Level configuration types */
+export interface Block {
+  type: "ground" | "breakable" | "mystery" | "hard" | "player";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  health?: number;
+  content?: "coin" | "mushroom" | "star";
+}
+
+export interface LevelConfig {
+  name: string;
+  description?: string;
+  levelData: string[];
+  width: number;
+  height: number;
+  playerStartX?: number;
+  playerStartY?: number;
 }

@@ -1,274 +1,689 @@
-# Implementation Plan for Super Mario Clone
+# Super Mario Level Design - Text-Based Level System
 
-## 1️⃣ Directory layout (add inside `vite-project/app/games`)
+## Overview
 
-    vite-project/app/games/
-    └── supermario/
-        ├── constants.ts            # game‑wide constants
-        ├── types.ts                # TS interfaces
-        ├── Game.tsx                # Main component that renders the canvas
-        ├── index.tsx               # Context provider + hook
-        └── components/
-            └── Player.tsx          # Sprite rendering
+This text-based level system allows for easy creation and editing of Super Mario levels using simple character-based grids. Level data is stored in `.tsx` files with rows of text, making it quick and intuitive to modify levels without complex coding.
 
-## 2️⃣ `constants.ts`
+## File Structure
 
-    /* Game constants – tweak these to adjust physics and size */
-    export const GRAVITY = 0.15;          // pixels per ms²
-    export const JUMP_VELOCITY = -5;      // initial velocity on jump
-    export const MOVE_SPEED = 0.1;        // incremental acceleration per ms
-    export const MAX_SPEED = 3;           // cap horizontal speed
-    export const GROUND_Y = 300;          // Y position of the ground line
-    export const CANVAS_WIDTH = 800;
-    export const CANVAS_HEIGHT = 400;
-    export const PLAYER_WIDTH = 25;
-    export const PLAYER_HEIGHT = 40;
+### Level File Format
 
-## 3️⃣ `types.ts`
+Level files should be placed in `millegrilles.games.typescript/vite-project/app/games/supermario/levels/` with a `.tsx` extension.
 
-    /* Core game state */
-    export interface PlayerState {
-      pos: { x: number; y: number };
-      vel: { x: number; y: number };
-      onGround: boolean;
-    }
+```typescript
+// Example: levels/LevelName.tsx
+import type { LevelConfig } from "../types";
 
-    /* Context values exposed by the provider */
-    export interface SuperMarioContext {
-      player: PlayerState;
-      startGame: () => void;
-      pauseGame: () => void;
-    }
+export const levelConfig: LevelConfig = {
+  name: "Level Name Here",
+  description: "Optional description",
+  levelData: [
+    "...................",  // Row 0
+    "...................",  // Row 1
+    ".......B...........",  // Row 2
+    ".......P...........",  // Row 3
+    ".....GGGGGG........",  // Row 4
+    "GGGGGGGGGGGGGGGGGG",  // Row 5
+    "GGGGGGGGGGGGGGGGGG",  // Row 6
+    "GGGGGGGGGGGGGGGGGG",  // Row 7
+  ],
+  width: 40,
+  height: 8,
+  playerStartX: 4,
+};
+```
 
-    /* Props for the provider */
-    export interface SuperMarioProviderProps {
-      children: ReactNode;
-    }
+## Legend
 
-## 4️⃣ `index.tsx` – provider + hook
+| Character | Meaning | Game Object Type |
+|-----------|---------|------------------|
+| `.` | Empty space | No game object |
+| `G` | Ground block | Solid ground platform |
+| `B` | Breakable block | Block that can be destroyed |
+| `P` | Player start | Where player spawns |
+| `?` | Mystery block | Block that gives items |
+| `#` | Hard block | Indestructible block |
 
-    import { createContext, useContext, useEffect, useRef, useState } from "react";
-    import { SuperMarioContext, SuperMarioProviderProps, PlayerState } from "./types";
-    import { GRAVITY, JUMP_VELOCITY, MOVE_SPEED, MAX_SPEED, GROUND_Y, CANVAS_HEIGHT } from "./constants";
+## Game Level Types
 
-    /* Context creation */
-    const SuperMarioContext = createContext<SuperMarioContext | null>(null);
+### Block Interface
 
-    /* Provider component */
-    export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
-      const [player, setPlayer] = useState<PlayerState>({
-        pos: { x: 50, y: GROUND_Y - PLAYER_HEIGHT },
-        vel: { x: 0, y: 0 },
-        onGround: true,
-      });
+```typescript
+interface Block {
+  type: "ground" | "breakable" | "mystery" | "hard" | "player";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  health?: number;  // For breakable blocks
+  content?: "coin" | "mushroom" | "star";  // For mystery blocks
+}
+```
 
-      const [running, setRunning] = useState(false);
-      const lastTimeRef = useRef<number>(0);
+### Level Configuration Interface
 
-      /* Key state */
-      const keysRef = useRef<{ left: boolean; right: boolean; jump: boolean }>({
-        left: false,
-        right: false,
-        jump: false,
-      });
+```typescript
+interface LevelConfig {
+  name: string;
+  description: string;
+  levelData: string[];
+  width: number;  // Must match levelData columns
+  height: number; // Must match levelData rows
+  playerStartX?: number;
+  playerStartY?: number;
+}
+```
 
-      /* Keyboard listeners */
-      useEffect(() => {
-        const down = (e: KeyboardEvent) => {
-          if (e.key.toLowerCase() === "arrowleft") keysRef.current.left = true;
-          if (e.key.toLowerCase() === "arrowright") keysRef.current.right = true;
-          if (e.key.toLowerCase() === " ") keysRef.current.jump = true;
-          if (e.key.toLowerCase() === "r") setRunning((prev) => !prev);
-        };
-        const up = (e: KeyboardEvent) => {
-          if (e.key.toLowerCase() === "arrowleft") keysRef.current.left = false;
-          if (e.key.toLowerCase() === "arrowright") keysRef.current.right = false;
-          if (e.key.toLowerCase() === " ") keysRef.current.jump = false;
-        };
-        window.addEventListener("keydown", down);
-        window.addEventListener("keyup", up);
-        return () => {
-          window.removeEventListener("keydown", down);
-          window.removeEventListener("keyup", up);
-        };
-      }, []);
+## Implementation Components
 
-      /* Gameloop */
-      useEffect(() => {
-        let anim: number;
-        const loop = (time: number) => {
-          const dt = time - lastTimeRef.current;
-          lastTimeRef.current = time;
+### 1. Level Parser
 
-          // Apply input to acceleration
-          let ax = 0;
-          if (keysRef.current.left) ax -= MOVE_SPEED;
-          if (keysRef.current.right) ax += MOVE_SPEED;
+Create `utils/LevelParser.tsx` to parse text-based levels:
 
-          // Update velocities
-          setPlayer((prev) => {
-            let vx = prev.vel.x + ax;
-            if (vx > MAX_SPEED) vx = MAX_SPEED;
-            if (vx < -MAX_SPEED) vx = -MAX_SPEED;
+```typescript
+import type { LevelConfig, Block } from "../types";
 
-            // Jump
-            if (keysRef.current.jump && prev.onGround) {
-              vx = prev.vel.x; // keep horizontal velocity when jumping
-              return { ...prev, vel: { x: vx, y: JUMP_VELOCITY }, onGround: false };
-            }
+const BLOCK_SIZE = 40; // pixels per grid cell
 
-            // Gravity
-            const vy = prev.vel.y + GRAVITY;
-
-            // Simple ground collision
-            const newY = Math.min(prev.pos.y + vy, CANVAS_HEIGHT - PLAYER_HEIGHT);
-            const onGround = newY >= GROUND_Y - PLAYER_HEIGHT;
-
-            return {
-              pos: { x: prev.pos.x + vx, y: newY },
-              vel: { x: vx, y: onGround ? 0 : vy },
-              onGround,
-            };
+export function parseLevelConfig(levelConfig: LevelConfig): Block[] {
+  const blocks: Block[] = [];
+  
+  levelConfig.levelData.forEach((row, rowIndex) => {
+    const y = rowIndex * BLOCK_SIZE;
+    
+    for (let colIndex = 0; colIndex < row.length; colIndex++) {
+      const char = row[colIndex];
+      const x = colIndex * BLOCK_SIZE;
+      
+      switch (char) {
+        case "G":
+          blocks.push({
+            type: "ground",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
           });
-
-          if (running) requestAnimationFrame(loop);
-        };
-        if (running) requestAnimationFrame(loop);
-        return () => cancelAnimationFrame(anim);
-      }, [running]);
-
-      /* Public API */
-      const startGame = () => setRunning(true);
-      const pauseGame = () => setRunning(false);
-
-      return (
-        <SuperMarioContext.Provider value={{ player, startGame, pauseGame }}>
-          {children}
-        </SuperMarioContext.Provider>
-      );
+          break;
+        case "B":
+          blocks.push({
+            type: "breakable",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
+            health: 2,
+          });
+          break;
+        case "P":
+          // Player start position
+          break;
+        case "?":
+          blocks.push({
+            type: "mystery",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
+            content: "coin",
+          });
+          break;
+        case "#":
+          blocks.push({
+            type: "hard",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
+          });
+          break;
+      }
     }
+  });
+  
+  return blocks;
+}
+```
 
-    /* Hook for components */
-    export function useSuperMario(): SuperMarioContext {
-      const ctx = useContext(SuperMarioContext);
-      if (!ctx) throw new Error("useSuperMario must be used within SuperMarioProvider");
-      return ctx;
-    }
+### 2. Level Blocks Component
 
-## 5️⃣ `Game.tsx` – render the canvas & player sprite
+Create `components/LevelBlocks.tsx` to render level objects:
 
-    import { useRef, useEffect } from "react";
-    import { useSuperMario } from "./index";
-    import { PlayerWidth, PlayerHeight } from "./constants";
+```typescript
+import React from "react";
+import type { Block } from "../types";
 
-    /* Simple sprite – can be replaced with an image later */
-    function Player() {
-      const { player } = useSuperMario();
-      return (
-        <rect
-          x={player.pos.x}
-          y={player.pos.y}
-          width={PlayerWidth}
-          height={PlayerHeight}
-          fill="orange"
+const BLOCK_COLORS: Record<string, string> = {
+  ground: "#228B22",      // Forest green
+  breakable: "#A0522D",    // Sienna
+  mystery: "#FFD700",      // Gold
+  hard: "#696969",        // Dim gray
+};
+
+const BLOCK_STYLES: Record<string, React.CSSProperties> = {
+  ground: {
+    border: "1px solid #000",
+    borderRadius: "4px",
+  },
+  breakable: {
+    border: "2px solid #8B4513",
+    backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px)",
+  },
+  mystery: {
+    border: "2px solid #FFA500",
+    background: "#FFD700",
+  },
+  hard: {
+    border: "2px solid #333",
+    background: "#4a4a4a",
+  },
+};
+
+interface LevelBlocksProps {
+  blocks: Block[];
+}
+
+export default function LevelBlocks({ blocks }: LevelBlocksProps) {
+  return (
+    <>
+      {blocks.map((block, index) => (
+        <div
+          key={index}
+          style={{
+            position: "absolute",
+            left: block.x,
+            top: block.y,
+            width: block.width,
+            height: block.height,
+            backgroundColor: BLOCK_COLORS[block.type] || "#000",
+            ...BLOCK_STYLES[block.type],
+          }}
         />
-      );
+      ))}
+    </>
+  );
+}
+```
+
+## Example Levels
+
+### Simple Ground Test
+
+```typescript
+// levels/SimpleGround.tsx
+export const levelConfig = {
+  name: "Simple Ground",
+  levelData: [
+    "...................................................",
+    "...................................................",
+    "....................B...B.....B...................",
+    "....................P....................P........",
+    ".................GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+  ],
+  width: 40,
+  height: 8,
+};
+```
+
+### Block Jumping
+
+```typescript
+// levels/BlockJump.tsx
+export const levelConfig = {
+  name: "Block Jump",
+  levelData: [
+    "........................B....B....................",
+    ".............................B.................B..",
+    "...............................B................B..",
+    "........P......................B...................",
+    ".....................BBBBBBBBB.....................",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+  ],
+  width: 40,
+  height: 9,
+};
+```
+
+## Integration with Existing Code
+
+### Types.ts Updates
+
+Add these interfaces to `types.ts`:
+
+```typescript
+/* Level configuration types */
+export interface Block {
+  type: "ground" | "breakable" | "mystery" | "hard" | "player";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  health?: number;
+  content?: "coin" | "mushroom" | "star";
+}
+
+export interface LevelConfig {
+  name: string;
+  levelData: string[];
+  width: number;
+  height: number;
+  playerStartX?: number;
+  playerStartY?: number;
+}
+```
+
+### Constants.ts Updates
+
+Add these constants:
+
+```typescript
+export const BLOCK_SIZE = 40;  // Pixels per grid cell
+export const BLOCK_ROWS = 16;  // Maximum rows
+export const BLOCK_COLS = 40;  // Maximum columns
+```
+
+### Index.tsx Updates
+
+Add level loading state to `SuperMarioProvider`:
+
+```typescript
+const [currentLevel, setCurrentLevel] = useState<LevelConfig | null>(null);
+const [blocks, setBlocks] = useState<Block[]>([]);
+
+const loadLevel = (levelConfig: LevelConfig) => {
+  setCurrentLevel(levelConfig);
+  const parsedBlocks = parseLevelConfig(levelConfig);
+  setBlocks(parsedBlocks);
+};
+```
+
+### Game.tsx Updates
+
+Add LevelBlocks component to rendering:
+
+```typescript
+import LevelBlocks from "./components/LevelBlocks";
+
+// In render JSX
+<div style={{ position: "relative", width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
+  <canvas ref={canvasRef} ... />
+  <LevelBlocks blocks={blocks} />
+  <Mario ... />
+  <div style={{ marginTop: "8px" }}>
+    {/* Buttons */}
+  </div>
+</div>
+```
+
+## Advantages of This Design
+
+1. **Developer Friendly**: Simple text format, no complex JSON
+2. **Visual**: Can see level structure at a glance
+3. **Easy to Modify**: Quick changes without programming
+4. **Portable**: Can share level files via text
+5. **Flexible**: Easy to extend with new tile types
+6. **Type Safe**: Strong typing throughout the level system
+7. **Maintainable**: Simple text format is easy to edit and understand
+8. **Minimal Changes**: Reuses existing game loop, rendering, and state management
+
+## Future Enhancements
+
+- Add more block types (coins, pipes, enemies, power-ups)
+- Implement level editor UI
+- Add multiple level selection UI
+- Implement save/load progress
+- Add level completion tracking
+- Create custom block designs using sprites
+- Support for scrolling levels beyond 40x16 grid
+```
+
+The user wants me to save this content directly as PLAN.md. I'll provide the file content wrapped in triple backticks as requested.</think>```markdown
+# Super Mario Level Design - Text-Based Level System
+
+## Overview
+
+This text-based level system allows for easy creation and editing of Super Mario levels using simple character-based grids. Level data is stored in `.tsx` files with rows of text, making it quick and intuitive to modify levels without complex coding.
+
+## File Structure
+
+### Level File Format
+
+Level files should be placed in `millegrilles.games.typescript/vite-project/app/games/supermario/levels/` with a `.tsx` extension.
+
+```typescript
+// Example: levels/LevelName.tsx
+import type { LevelConfig } from "../types";
+
+export const levelConfig: LevelConfig = {
+  name: "Level Name Here",
+  description: "Optional description",
+  levelData: [
+    "...................",  // Row 0
+    "...................",  // Row 1
+    ".......B...........",  // Row 2
+    ".......P...........",  // Row 3
+    ".....GGGGGG........",  // Row 4
+    "GGGGGGGGGGGGGGGGGG",  // Row 5
+    "GGGGGGGGGGGGGGGGGG",  // Row 6
+    "GGGGGGGGGGGGGGGGGG",  // Row 7
+  ],
+  width: 40,
+  height: 8,
+  playerStartX: 4,
+};
+```
+
+## Legend
+
+| Character | Meaning | Game Object Type |
+|-----------|---------|------------------|
+| `.` | Empty space | No game object |
+| `G` | Ground block | Solid ground platform |
+| `B` | Breakable block | Block that can be destroyed |
+| `P` | Player start | Where player spawns |
+| `?` | Mystery block | Block that gives items |
+| `#` | Hard block | Indestructible block |
+
+## Game Level Types
+
+### Block Interface
+
+```typescript
+interface Block {
+  type: "ground" | "breakable" | "mystery" | "hard" | "player";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  health?: number;  // For breakable blocks
+  content?: "coin" | "mushroom" | "star";  // For mystery blocks
+}
+```
+
+### Level Configuration Interface
+
+```typescript
+interface LevelConfig {
+  name: string;
+  description: string;
+  levelData: string[];
+  width: number;  // Must match levelData columns
+  height: number; // Must match levelData rows
+  playerStartX?: number;
+  playerStartY?: number;
+}
+```
+
+## Implementation Components
+
+### 1. Level Parser
+
+Create `utils/LevelParser.tsx` to parse text-based levels:
+
+```typescript
+import type { LevelConfig, Block } from "../types";
+
+const BLOCK_SIZE = 40; // pixels per grid cell
+
+export function parseLevelConfig(levelConfig: LevelConfig): Block[] {
+  const blocks: Block[] = [];
+  
+  levelConfig.levelData.forEach((row, rowIndex) => {
+    const y = rowIndex * BLOCK_SIZE;
+    
+    for (let colIndex = 0; colIndex < row.length; colIndex++) {
+      const char = row[colIndex];
+      const x = colIndex * BLOCK_SIZE;
+      
+      switch (char) {
+        case "G":
+          blocks.push({
+            type: "ground",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
+          });
+          break;
+        case "B":
+          blocks.push({
+            type: "breakable",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
+            health: 2,
+          });
+          break;
+        case "P":
+          // Player start position
+          break;
+        case "?":
+          blocks.push({
+            type: "mystery",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
+            content: "coin",
+          });
+          break;
+        case "#":
+          blocks.push({
+            type: "hard",
+            x,
+            y,
+            width: BLOCK_SIZE,
+            height: BLOCK_SIZE,
+          });
+          break;
+      }
     }
+  });
+  
+  return blocks;
+}
+```
 
-    /* Main Game component */
-    export default function Game() {
-      const canvasRef = useRef<HTMLCanvasElement | null>(null);
-      const { startGame, pauseGame, player } = useSuperMario();
+### 2. Level Blocks Component
 
-      /* Hook up canvas drawing */
-      useEffect(() => {
-        const canvas = canvasRef.current!;
-        const ctx = canvas.getContext("2d")!;
-        let animation: number;
+Create `components/LevelBlocks.tsx` to render level objects:
 
-        const render = () => {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = "skyblue";
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
+```typescript
+import React from "react";
+import type { Block } from "../types";
 
-          // Ground line
-          ctx.fillStyle = "green";
-          ctx.fillRect(0, 300, canvas.width, canvas.height - 300);
+const BLOCK_COLORS: Record<string, string> = {
+  ground: "#228B22",      // Forest green
+  breakable: "#A0522D",    // Sienna
+  mystery: "#FFD700",      // Gold
+  hard: "#696969",        // Dim gray
+};
 
-          // Draw player
-          ctx.fillStyle = "orange";
-          ctx.fillRect(
-            player.pos.x,
-            player.pos.y,
-            PlayerWidth,
-            PlayerHeight
-          );
-        };
+const BLOCK_STYLES: Record<string, React.CSSProperties> = {
+  ground: {
+    border: "1px solid #000",
+    borderRadius: "4px",
+  },
+  breakable: {
+    border: "2px solid #8B4513",
+    backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(0,0,0,0.1) 5px, rgba(0,0,0,0.1) 10px)",
+  },
+  mystery: {
+    border: "2px solid #FFA500",
+    background: "#FFD700",
+  },
+  hard: {
+    border: "2px solid #333",
+    background: "#4a4a4a",
+  },
+};
 
-        const loop = () => {
-          render();
-          animation = requestAnimationFrame(loop);
-        };
-        loop();
+interface LevelBlocksProps {
+  blocks: Block[];
+}
 
-        return () => cancelAnimationFrame(animation);
-      }, [player]);
+export default function LevelBlocks({ blocks }: LevelBlocksProps) {
+  return (
+    <>
+      {blocks.map((block, index) => (
+        <div
+          key={index}
+          style={{
+            position: "absolute",
+            left: block.x,
+            top: block.y,
+            width: block.width,
+            height: block.height,
+            backgroundColor: BLOCK_COLORS[block.type] || "#000",
+            ...BLOCK_STYLES[block.type],
+          }}
+        />
+      ))}
+    </>
+  );
+}
+```
 
-      return (
-        <div>
-          <canvas ref={canvasRef} width={800} height={400} />
-          <button onClick={startGame}>Start</button>
-          <button onClick={pauseGame}>Pause</button>
-        </div>
-      );
-    }
+## Example Levels
 
-## 6️⃣ Route file to use the provider
+### Simple Ground Test
 
-Create `vite-project/app/routes/games/supermario.tsx`:
+```typescript
+// levels/SimpleGround.tsx
+export const levelConfig = {
+  name: "Simple Ground",
+  levelData: [
+    "...................................................",
+    "...................................................",
+    "....................B...B.....B...................",
+    "....................P....................P........",
+    ".................GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+    "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG...",
+  ],
+  width: 40,
+  height: 8,
+};
+```
 
-    import { SuperMarioProvider } from "../../games/supermario";
-    import SuperMarioGame from "../../games/supermario/Game";
+### Block Jumping
 
-    export default function SuperMario() {
-      return (
-        <SuperMarioProvider>
-          <SuperMarioGame />
-        </SuperMarioProvider>
-      );
-    }
+```typescript
+// levels/BlockJump.tsx
+export const levelConfig = {
+  name: "Block Jump",
+  levelData: [
+    "........................B....B....................",
+    ".............................B.................B..",
+    "...............................B................B..",
+    "........P......................B...................",
+    ".....................BBBBBBBBB.....................",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+    "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+  ],
+  width: 40,
+  height: 9,
+};
+```
 
-## 7️⃣ Summary Checklist
+## Integration with Existing Code
 
-| Step | Description | File created | Key content |
-|------|-------------|--------------|-------------|
-| 1 | Directories | none created yet | `vite-project/app/games/supermario/...` |
-| 2 | Constants | `constants.ts` | Gravity, jump, speed, ground Y |
-| 3 | Types | `types.ts` | `PlayerState`, `SuperMarioContext` |
-| 4 | Provider & hook | `index.tsx` | Context, keyboard, gameloop |
-| 5 | Canvas render | `Game.tsx` | Render loop, simple drawing |
-| 6 | Route | `games/supermario.tsx` | Wrap provider around game |
-| 7 | Build & test | npm commands | `npm run build`, `npm run dev` |
+### Types.ts Updates
 
-> **Running**
-> 1. `cd vite-project`
-> 2. `npm install` (if needed)
-> 3. `npm run dev` – open `/games/supermario` in your browser.
-> 4. Press the arrow keys to move, space to jump, `r` to toggle simulation, `ESC` to pause.
+Add these interfaces to `types.ts`:
 
-## 8️⃣ Next steps (once this phase is working)
+```typescript
+/* Level configuration types */
+export interface Block {
+  type: "ground" | "breakable" | "mystery" | "hard" | "player";
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  health?: number;
+  content?: "coin" | "mushroom" | "star";
+}
 
-1. Replace the simple rectangle with an animated sprite using an image or canvas drawing routine.
-2. Add physics for slope/edge collisions.
-3. Create a level data file and render multiple platforms.
-4. Introduce enemies and collectibles.
-5. Build UI (score, lives, HUD).
-6. Add mobile touch controls.
-7. Persist progress in `localStorage`.
-8. Implement audio with an AudioManager.
+export interface LevelConfig {
+  name: string;
+  levelData: string[];
+  width: number;
+  height: number;
+  playerStartX?: number;
+  playerStartY?: number;
+}
+```
 
-Follow the same create‑edit pattern you used here for adding each feature – use the `supermario/` folder to keep everything logically grouped.
+### Constants.ts Updates
 
---- 
+Add these constants:
 
-Happy coding!  If you hit any type‑checking or runtime issues, you can run `npm run dev` and check the console; the code above intentionally logs a lot of state changes to help debugging.  Feel free to ask if you need further guidance on any step.
+```typescript
+export const BLOCK_SIZE = 40;  // Pixels per grid cell
+export const BLOCK_ROWS = 16;  // Maximum rows
+export const BLOCK_COLS = 40;  // Maximum columns
+```
+
+### Index.tsx Updates
+
+Add level loading state to `SuperMarioProvider`:
+
+```typescript
+const [currentLevel, setCurrentLevel] = useState<LevelConfig | null>(null);
+const [blocks, setBlocks] = useState<Block[]>([]);
+
+const loadLevel = (levelConfig: LevelConfig) => {
+  setCurrentLevel(levelConfig);
+  const parsedBlocks = parseLevelConfig(levelConfig);
+  setBlocks(parsedBlocks);
+};
+```
+
+### Game.tsx Updates
+
+Add LevelBlocks component to rendering:
+
+```typescript
+import LevelBlocks from "./components/LevelBlocks";
+
+// In render JSX
+<div style={{ position: "relative", width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
+  <canvas ref={canvasRef} ... />
+  <LevelBlocks blocks={blocks} />
+  <Mario ... />
+  <div style={{ marginTop: "8px" }}>
+    {/* Buttons */}
+  </div>
+</div>
+```
+
+## Advantages of This Design
+
+1. **Developer Friendly**: Simple text format, no complex JSON
+2. **Visual**: Can see level structure at a glance
+3. **Easy to Modify**: Quick changes without programming
+4. **Portable**: Can share level files via text
+5. **Flexible**: Easy to extend with new tile types
+6. **Type Safe**: Strong typing throughout the level system
+7. **Maintainable**: Simple text format is easy to edit and understand
+8. **Minimal Changes**: Reuses existing game loop, rendering, and state management
+
+## Future Enhancements
+
+- Add more block types (coins, pipes, enemies, power-ups)
+- Implement level editor UI
+- Add multiple level selection UI
+- Implement save/load progress
+- Add level completion tracking
+- Create custom block designs using sprites
+- Support for scrolling levels beyond 40x16 grid

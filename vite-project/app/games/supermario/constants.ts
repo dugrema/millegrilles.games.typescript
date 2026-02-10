@@ -10,3 +10,6 @@ export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 400;
 export const PLAYER_WIDTH = 64;
 export const PLAYER_HEIGHT = 64;
+export const BLOCK_SIZE = 40; // Pixels per grid cell
+export const BLOCK_ROWS = 16; // Maximum rows
+export const BLOCK_COLS = 40; // Maximum columns
