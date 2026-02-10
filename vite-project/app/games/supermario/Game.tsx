@@ -100,14 +100,12 @@ export default function Game() {
         <button onClick={pauseGame} style={{ marginLeft: "8px" }}>
           Pause
         </button>
-        {blocks.length > 0 && (
-          <button
-            onClick={() => loadLevel(simpleGroundLevel)}
-            style={{ marginLeft: "8px" }}
-          >
-            Load Level
-          </button>
-        )}
+        <button
+          onClick={() => loadLevel(simpleGroundLevel)}
+          style={{ marginLeft: "8px" }}
+        >
+          Load Level
+        </button>
       </div>
     </div>
   );
