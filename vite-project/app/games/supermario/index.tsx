@@ -260,12 +260,11 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
 
     /* Helper to calculate camera offset */
     const calculateCameraOffset = (playerX: number) => {
-      // Keep player in center of screen
+      // Keep player in center of screen by calculating offset from player position
+      // When player is at center (x=0), offset should be CANVAS_WIDTH / 2
+      // When player moves right, offset decreases
       const targetX = CANVAS_WIDTH / 2 - playerX;
-      // Clamp offset to screen bounds
-      const minX = -playerX; // Player can't go past left edge
-      const maxX = -playerX + CANVAS_WIDTH; // Player can't go past right edge
-      return { x: Math.max(Math.min(targetX, maxX), minX), y: 0 };
+      return { x: targetX, y: 0 };
     };
 
     if (running) {
@@ -283,8 +282,10 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
     const parsedBlocks = parseLevelConfig(levelConfig);
     setBlocks(parsedBlocks);
     // Reset player position when loading a new level
+    // Keep player at center of screen and reset camera offset to prevent jumps
+    const centerX = CANVAS_WIDTH / 2;
     setPlayer({
-      pos: { x: levelConfig.playerStartX || 0, y: GROUND_Y - PLAYER_HEIGHT },
+      pos: { x: centerX, y: GROUND_Y - PLAYER_HEIGHT },
       vel: { x: 0, y: 0 },
       onGround: true,
       cameraOffset: { x: 0, y: 0 },
