@@ -76,7 +76,7 @@ export default function Game() {
         style={{ border: "1px solid #333" }}
       />
       {/* Render level blocks on top of the canvas. */}
-      <LevelBlocks blocks={blocks} />
+      <LevelBlocks blocks={blocks} cameraOffset={player.cameraOffset} />
 
       {/* Render the animated Mario sprite on top of the canvas. */}
       <Mario

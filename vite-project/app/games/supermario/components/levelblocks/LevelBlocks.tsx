@@ -30,9 +30,13 @@ const BLOCK_STYLES: Record<string, React.CSSProperties> = {
 
 interface LevelBlocksProps {
   blocks: Block[];
+  cameraOffset: { x: number; y: number };
 }
 
-export default function LevelBlocks({ blocks }: LevelBlocksProps) {
+export default function LevelBlocks({
+  blocks,
+  cameraOffset,
+}: LevelBlocksProps) {
   return (
     <>
       {blocks.map((block, index) => (
@@ -40,8 +44,8 @@ export default function LevelBlocks({ blocks }: LevelBlocksProps) {
           key={index}
           style={{
             position: "absolute",
-            left: block.x,
-            top: block.y,
+            left: block.x + cameraOffset.x,
+            top: block.y + cameraOffset.y,
             width: block.width,
             height: block.height,
             backgroundColor: BLOCK_COLORS[block.type] || "#000",

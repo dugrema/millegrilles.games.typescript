@@ -78,6 +78,55 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
     };
   }, []);
 
+  /**
+   * Check if player overlaps with a block
+   * @param player - Player position and dimensions
+   * @param block - Block position and dimensions
+   * @returns true if player and block overlap
+   */
+  function checkCollision(player: PlayerState, block: Block): boolean {
+    const playerLeft = player.pos.x;
+    const playerRight = player.pos.x + PLAYER_WIDTH;
+    const playerTop = player.pos.y;
+    const playerBottom = player.pos.y + PLAYER_HEIGHT;
+
+    const blockLeft = block.x;
+    const blockRight = block.x + block.width;
+    const blockTop = block.y;
+    const blockBottom = block.y + block.height;
+
+    return (
+      playerLeft < blockRight &&
+      playerRight > blockLeft &&
+      playerTop < blockBottom &&
+      playerBottom > blockTop
+    );
+  }
+
+  /**
+   * Check if player is ABOVE a block
+   * @param player - Player position
+   * @param block - Block position and dimensions
+   * @returns true if player's bottom is above block's top
+   */
+  function isAboveBlock(player: PlayerState, block: Block): boolean {
+    const playerBottom = player.pos.y + PLAYER_HEIGHT;
+    const blockTop = block.y;
+    return playerBottom < blockTop;
+  }
+
+  /**
+   * Check if player is BELOW a block
+   * @param player - Player position
+   * @param block - Block position and dimensions
+   * @returns true if player's top is above block's bottom
+   */
+  function isBelowBlock(player: PlayerState, block: Block): boolean {
+    const playerTop = player.pos.y;
+    const blockBottom = block.y + block.height;
+    return playerTop > blockBottom;
+  }
+
   /* Gameloop */
   useEffect(() => {
     let anim: number = 0;
@@ -116,21 +165,91 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
         // Gravity
         let vy = prev.vel.y + GRAVITY;
 
-        // Ground collision with push-out and horizontal velocity reset
-        const groundLevel = GROUND_Y - PLAYER_HEIGHT;
+        // === BLOCK-BASED COLLISION DETECTION ===
+
+        let onGround = false;
+        let groundY = GROUND_Y; // Default to floor
+
+        // Calculate potential new positions
+        let newX = prev.pos.x + vx;
         let newY = prev.pos.y + vy;
-        if (newY > groundLevel) {
-          // Player sank into ground - push them out
-          newY = groundLevel;
-          vy = 0;
+
+        // Check collisions with all blocks
+        for (const block of blocks) {
+          // Skip player-start position blocks to prevent early collision
+          if (block.type === "player") continue;
+
+          // Calculate block position with camera offset
+          const blockLeft = block.x + prev.cameraOffset.x;
+          const blockRight = block.x + block.width + prev.cameraOffset.x;
+          const blockTop = block.y + prev.cameraOffset.y;
+          const blockBottom = block.y + block.height + prev.cameraOffset.y;
+
+          // Check for horizontal collision (wall)
+          if (
+            prev.pos.y < blockBottom &&
+            prev.pos.y + PLAYER_HEIGHT > blockTop
+          ) {
+            // Player is vertically within block bounds
+            // Check if moving into block
+            if (vx > 0 && newX + PLAYER_WIDTH > blockLeft && newX < blockLeft) {
+              // Moving right into block
+              newX = blockLeft - PLAYER_WIDTH;
+              vx = 0;
+            } else if (
+              vx < 0 &&
+              newX < blockRight &&
+              newX + PLAYER_WIDTH > blockRight
+            ) {
+              // Moving left into block
+              newX = blockRight;
+              vx = 0;
+            }
+          }
+
+          // Check for ground collision
+          if (newY + PLAYER_HEIGHT > blockTop && newY < blockBottom) {
+            // Player is falling and would hit or pass through block
+            if (vy > 0) {
+              // Only allow ground collision if player is below block top (not climbing)
+              // or if player is above and we're setting ground level
+              const playerAbove = prev.pos.y + PLAYER_HEIGHT < blockTop;
+              const playerBelow = prev.pos.y > blockBottom;
+
+              if (playerBelow) {
+                // Player is walking on or below block
+                newY = blockTop - PLAYER_HEIGHT;
+                vy = 0;
+                onGround = true;
+                groundY = blockTop;
+              } else if (playerAbove && vy > 0) {
+                // Player falling and would hit block top
+                // Adjust to sit on top of block
+                newY = blockTop - PLAYER_HEIGHT;
+                vy = 0;
+                onGround = true;
+                groundY = blockTop;
+              }
+            }
+          }
         }
-        const onGround = newY >= groundLevel;
+
+        // Fallback to floor if no ground found
+        if (!onGround) {
+          const floorLevel = GROUND_Y - PLAYER_HEIGHT;
+          if (newY > floorLevel) {
+            newY = floorLevel;
+            vy = 0;
+            onGround = true;
+            groundY = GROUND_Y;
+          }
+        }
 
         return {
-          pos: { x: prev.pos.x + vx, y: newY },
-          vel: { x: vx, y: onGround ? 0 : vy },
+          pos: { x: newX, y: newY },
+          vel: { x: vx, y: vy }, // Keep vertical velocity for jumping
           onGround,
-          cameraOffset: calculateCameraOffset(prev.pos.x + vx),
+          cameraOffset: calculateCameraOffset(newX),
         };
       });
 
