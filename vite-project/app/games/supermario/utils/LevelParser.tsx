@@ -1,9 +1,24 @@
 import type { LevelConfig, Block } from "../types";
+import { BLOCK_SIZE } from "../constants";
 
-const BLOCK_SIZE = 40; // pixels per grid cell
+export interface ParsedLevel {
+  blocks: Block[];
+  playerStart: { x: number; y: number } | null;
+  groundY: number;
+  groundHeight: number;
+}
 
-export function parseLevelConfig(levelConfig: LevelConfig): Block[] {
+export function parseLevelConfig(levelConfig: LevelConfig): ParsedLevel {
   const blocks: Block[] = [];
+  let playerStart: { x: number; y: number } | null = null;
+
+  // Find the ground row (last row containing ground blocks)
+  const groundRowIndex = levelConfig.levelData.length - 1;
+  const groundY = groundRowIndex * BLOCK_SIZE;
+
+  // Calculate the height from the bottom of the level to the ground
+  const remainingRows = levelConfig.levelData.length - 1 - groundRowIndex;
+  const groundHeight = (remainingRows + 1) * BLOCK_SIZE;
 
   levelConfig.levelData.forEach((row, rowIndex) => {
     const y = rowIndex * BLOCK_SIZE;
@@ -33,7 +48,7 @@ export function parseLevelConfig(levelConfig: LevelConfig): Block[] {
           });
           break;
         case "P":
-          // Player start position
+          playerStart = { x, y };
           break;
         case "?":
           blocks.push({
@@ -58,5 +73,5 @@ export function parseLevelConfig(levelConfig: LevelConfig): Block[] {
     }
   });
 
-  return blocks;
+  return { blocks, playerStart, groundY, groundHeight };
 }

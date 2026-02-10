@@ -28,7 +28,7 @@ const SuperMarioContext = createContext<SuperMarioContext | null>(null);
 /* Provider component */
 export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
   const [player, setPlayer] = useState<PlayerState>({
-    pos: { x: 50, y: GROUND_Y - PLAYER_HEIGHT },
+    pos: { x: CANVAS_WIDTH / 2, y: GROUND_Y - PLAYER_HEIGHT },
     vel: { x: 0, y: 0 },
     onGround: true,
     cameraOffset: { x: 0, y: 0 },
@@ -279,16 +279,19 @@ export function SuperMarioProvider({ children }: SuperMarioProviderProps) {
 
   const loadLevel = (levelConfig: LevelConfig) => {
     setCurrentLevel(levelConfig);
-    const parsedBlocks = parseLevelConfig(levelConfig);
-    setBlocks(parsedBlocks);
-    // Reset player position when loading a new level
-    // Keep player at center of screen and reset camera offset to prevent jumps
-    const centerX = CANVAS_WIDTH / 2;
+    const parsed = parseLevelConfig(levelConfig);
+    setBlocks(parsed.blocks);
+
+    // Initialize player using level data or default position
+    const playerStartX = parsed.playerStart?.x ?? CANVAS_WIDTH / 2;
+    const playerStartY =
+      parsed.playerStart?.y ?? parsed.groundY - PLAYER_HEIGHT;
+
     setPlayer({
-      pos: { x: centerX, y: GROUND_Y - PLAYER_HEIGHT },
+      pos: { x: playerStartX, y: playerStartY },
       vel: { x: 0, y: 0 },
       onGround: true,
-      cameraOffset: { x: 0, y: 0 },
+      cameraOffset: { x: 0, y: 0 }, // Start with no camera offset
     });
   };
 

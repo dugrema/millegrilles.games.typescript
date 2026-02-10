@@ -34,7 +34,7 @@ export default function Game() {
     tick();
   }, []);
 
-  /* Canvas background rendering (sky + ground). */
+  /* Canvas background rendering (sky). */
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d")!;
@@ -46,10 +46,6 @@ export default function Game() {
       // Sky background
       ctx.fillStyle = "skyblue";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Ground
-      ctx.fillStyle = "green";
-      ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
     };
 
     const loop = () => {
