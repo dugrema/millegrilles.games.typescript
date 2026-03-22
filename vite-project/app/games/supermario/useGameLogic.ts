@@ -299,19 +299,49 @@ export function useGameLogic() {
       const marioLeft = mario.x;
       const marioRight = mario.x + mario.width;
       const marioBottom = mario.y + mario.height;
+      const marioTop = mario.y;
 
-      if (
-        marioLeft < pipe.x + pipe.width &&
-        marioRight > pipe.x &&
-        marioBottom >= pipe.y &&
-        marioBottom <= pipe.y + 10 &&
-        mario.velocityY >= 0
-      ) {
-        // Mario is landing on top of pipe
-        mario.y = pipe.y - mario.height;
-        mario.velocityY = 0;
-        mario.isGrounded = true;
-        mario.isJumping = false;
+      if (marioLeft < pipe.x + pipe.width && marioRight > pipe.x) {
+        // Check if Mario is landing on top (feet were above pipe last frame or at pipe top)
+        if (
+          marioBottom >= pipe.y &&
+          marioBottom <= pipe.y + 10 &&
+          mario.velocityY >= 0
+        ) {
+          // Mario is landing on top of pipe
+          mario.y = pipe.y - mario.height;
+          mario.velocityY = 0;
+          mario.isGrounded = true;
+          mario.isJumping = false;
+        }
+        // Check if Mario's head hits the underside of pipe while jumping up
+        else if (
+          marioTop <= pipe.y + pipe.height &&
+          marioTop >= pipe.y &&
+          mario.velocityY < 0
+        ) {
+          // Mario's head hits pipe underside - stop upward movement
+          mario.y = pipe.y + pipe.height;
+          mario.velocityY = 0;
+        }
+        // Horizontal collision on sides - only if Mario actually overlaps the pipe side
+        else if (
+          marioTop < pipe.y + pipe.height &&
+          marioBottom > pipe.y &&
+          // Mario must actually be touching the side, not just passing underneath
+          ((marioRight > pipe.x && marioLeft < pipe.x) ||
+            (marioLeft < pipe.x + pipe.width &&
+              marioRight > pipe.x + pipe.width))
+        ) {
+          // Check if Mario is on the left side of pipe
+          if (mario.x + mario.width / 2 < pipe.x + pipe.width / 2) {
+            mario.x = pipe.x - mario.width;
+            mario.velocityX = 0;
+          } else {
+            mario.x = pipe.x + pipe.width;
+            mario.velocityX = 0;
+          }
+        }
       }
     }
 
@@ -322,39 +352,49 @@ export function useGameLogic() {
       const marioLeft = mario.x;
       const marioRight = mario.x + mario.width;
       const marioBottom = mario.y + mario.height;
+      const marioTop = mario.y;
 
-      if (
-        marioLeft < platform.x + platform.width &&
-        marioRight > platform.x &&
-        marioBottom >= platform.y &&
-        marioBottom <= platform.y + 10 &&
-        mario.velocityY >= 0
-      ) {
-        // Mario is landing on top of platform
-        mario.y = platform.y - mario.height;
-        mario.velocityY = 0;
-        mario.isGrounded = true;
-        mario.isJumping = false;
-      }
-    }
-
-    // Check if Mario hit bottom of platform (head bump)
-    for (const platform of platforms) {
-      // Use expanded hitbox for more forgiving collision detection
-      const hitboxPadding = 4;
-      const marioLeft = mario.x - hitboxPadding;
-      const marioRight = mario.x + mario.width + hitboxPadding;
-      const marioTop = mario.y - hitboxPadding;
-
-      if (
-        marioLeft < platform.x + platform.width &&
-        marioRight > platform.x &&
-        marioTop >= platform.y + platform.height - 10 &&
-        mario.velocityY < 0 // Must be moving upward to hit head
-      ) {
-        // Hit head on bottom of platform
-        mario.y = platform.y + platform.height;
-        mario.velocityY = 0;
+      if (marioLeft < platform.x + platform.width && marioRight > platform.x) {
+        // Check if Mario is landing on top (feet were above platform last frame or at platform top)
+        if (
+          marioBottom >= platform.y &&
+          marioBottom <= platform.y + 10 &&
+          mario.velocityY >= 0
+        ) {
+          // Mario is landing on top of platform
+          mario.y = platform.y - mario.height;
+          mario.velocityY = 0;
+          mario.isGrounded = true;
+          mario.isJumping = false;
+        }
+        // Check if Mario's head hits the underside of platform while jumping up
+        else if (
+          marioTop <= platform.y + platform.height &&
+          marioTop >= platform.y &&
+          mario.velocityY < 0
+        ) {
+          // Mario's head hits platform underside - stop upward movement
+          mario.y = platform.y + platform.height;
+          mario.velocityY = 0;
+        }
+        // Horizontal collision on sides - only if Mario actually overlaps the platform side
+        else if (
+          marioTop < platform.y + platform.height &&
+          marioBottom > platform.y &&
+          // Mario must actually be touching the side, not just passing underneath
+          ((marioRight > platform.x && marioLeft < platform.x) ||
+            (marioLeft < platform.x + platform.width &&
+              marioRight > platform.x + platform.width))
+        ) {
+          // Mario is touching the platform side
+          if (mario.x + mario.width / 2 < platform.x + platform.width / 2) {
+            mario.x = platform.x - mario.width;
+            mario.velocityX = 0;
+          } else {
+            mario.x = platform.x + platform.width;
+            mario.velocityX = 0;
+          }
+        }
       }
     }
 
@@ -364,119 +404,100 @@ export function useGameLogic() {
       // Used question blocks remain solid obstacles
       if (block.y >= CANVAS_HEIGHT - GROUND_HEIGHT - block.height) continue;
 
-      // Use hitbox for side collision but visual position for vertical collision
-      const hitboxPadding = 1;
-      const marioLeft = mario.x - hitboxPadding;
-      const marioRight = mario.x + mario.width + hitboxPadding;
-      const marioTop = mario.y - hitboxPadding;
-      const marioBottom = mario.y + mario.height + hitboxPadding;
-      // Visual Mario position for top/bottom collision (no padding)
-      const visualMarioTop = mario.y;
-      const visualMarioBottom = mario.y + mario.height;
+      // Use exact bounds for precise collision
+      const marioLeft = mario.x;
+      const marioRight = mario.x + mario.width;
+      const marioTop = mario.y;
+      const marioBottom = mario.y + mario.height;
 
-      // Check if Mario is above the block (can stand on top)
-      if (
-        marioLeft < block.x + block.width &&
-        marioRight > block.x &&
-        marioBottom >= block.y &&
-        marioBottom <= block.y + 10 &&
-        mario.velocityY >= 0
-      ) {
-        // Land on top of block
-        mario.y = block.y - mario.height;
-        mario.velocityY = 0;
-        mario.isGrounded = true;
-        mario.isJumping = false;
-      }
-      // Check if Mario's feet hit the underside of the block when jumping up
-      // This prevents Mario from passing through the entire block while punching up
-      // Use visualMarioBottom (no padding) so collision matches the visible red rectangle
-      else if (
-        marioLeft < block.x + block.width &&
-        marioRight > block.x &&
-        // Mario's visual feet reach or pass the block's bottom (first point of contact)
-        visualMarioBottom >= block.y + block.height &&
-        mario.velocityY < 0 // Mario must be moving upward
-      ) {
-        // Mario's visual feet hit the underside of the block from below
-        // Position Mario so his visual feet are at the block's bottom edge
-        mario.y = block.y + block.height;
-        mario.velocityY = 0; // Stop upward motion, let gravity pull him down
-
-        // Activate question block
-        if (block.type === "QUESTION" && !block.used) {
-          block.used = true;
-
-          // Deliver contents if any
-          if (block.contents === "COIN") {
-            dispatch({ type: "ADD_COIN" });
-            audioManager.playCoin();
-            spawnParticles("COIN_SPARKLE", block.x + 20, block.y + 20);
-          } else if (block.contents === "MUSHROOM") {
-            // Spawn mushroom entity that moves right (SUPER type by default)
-            const newMushroom: Mushroom = {
-              id: `mushroom-${block.id}-${Date.now()}`,
-              x: block.x,
-              y: block.y - 32, // Spawn just above block
-              width: 32,
-              height: 32,
-              velocityX: MUSHROOM_SPEED,
-              velocityY: 0, // Start with no vertical velocity
-              active: true,
-              spawnTime: Date.now(),
-              type: "SUPER", // Default to SUPER mushroom
-            };
-            // Add to ref - will be synced via UPDATE_LOCAL_STATE
-            mushroomsRef.current.push(newMushroom);
-            audioManager.playMushroomSpawn();
-            spawnParticles("MUSHROOM_BURST", block.x + 20, block.y + 20);
-          } else if (block.contents === null) {
-            // Empty question block just gives 100 points
-            dispatch({ type: "ADD_SCORE", payload: 100 });
-            audioManager.playMushroomSpawn();
-            spawnParticles("MUSHROOM_BURST", block.x + 20, block.y + 20);
-          }
-        } else if (block.type === "BRICK" && mario.isBig) {
-          // Big Mario breaks brick - remove from ref so UPDATE_LOCAL_STATE doesn't restore it
-          blocksRef.current = blocksRef.current.filter(
-            (b: Block) => b.x !== block.x || b.y !== block.y,
-          );
-          dispatch({
-            type: "BREAK_BRICK",
-            payload: { x: block.x, y: block.y },
-          });
-          audioManager.playBrickBreak();
-          spawnParticles("BRICK_BREAK", block.x + 20, block.y + 20);
-          dispatch({ type: "ADD_SCORE", payload: 100 });
+      // Check horizontal overlap first
+      if (marioLeft < block.x + block.width && marioRight > block.x) {
+        // Check if Mario is landing on top of block (feet at block top, falling down)
+        if (
+          marioBottom >= block.y &&
+          marioBottom <= block.y + 10 &&
+          mario.velocityY >= 0
+        ) {
+          // Land on top of block
+          mario.y = block.y - mario.height;
+          mario.velocityY = 0;
+          mario.isGrounded = true;
+          mario.isJumping = false;
         }
-      }
-      // Check horizontal collision (side collision)
-      // Note: This is inside the main block loop, so it checks all blocks
-      else if (
-        marioLeft < block.x + block.width &&
-        marioRight > block.x &&
-        marioTop < block.y + block.height &&
-        marioBottom > block.y &&
-        // Only horizontal collision if Mario's vertical position overlaps block
-        // Mario must not be above or below the block
-        marioTop < block.y + block.height - 10 &&
-        marioBottom > block.y + 10 &&
-        // Prevent horizontal collision when Mario is below the block (jumping from under)
-        // Only allow horizontal collision if Mario's bottom is above block's bottom
-        // This ensures Mario is at proper height for side collision, not below the block
-        marioBottom < block.y + block.height &&
-        // Only push horizontally if Mario is not jumping upward
-        mario.velocityY >= 0
-      ) {
-        // Mario hit the side of the block
-        if (mario.x + mario.width / 2 < block.x + block.width / 2) {
-          // Mario is on the left side of block - push left
-          mario.x = block.x - mario.width;
-          mario.velocityX = 0;
-        } else {
-          // Mario is on the right side of block - push right
-          mario.x = block.x + block.width;
-          mario.velocityX = 0;
+        // Check if Mario's head hits the underside of block while jumping up
+        else if (
+          marioTop <= block.y + block.height &&
+          marioTop >= block.y &&
+          mario.velocityY < 0
+        ) {
+          // Mario's head hits block underside - stop upward movement
+          mario.y = block.y + block.height;
+          mario.velocityY = 0;
+
+          // Activate question block
+          if (block.type === "QUESTION" && !block.used) {
+            block.used = true;
+
+            // Deliver contents if any
+            if (block.contents === "COIN") {
+              dispatch({ type: "ADD_COIN" });
+              audioManager.playCoin();
+              spawnParticles("COIN_SPARKLE", block.x + 20, block.y + 20);
+            } else if (block.contents === "MUSHROOM") {
+              // Spawn mushroom entity that moves right (SUPER type by default)
+              const newMushroom: Mushroom = {
+                id: `mushroom-${block.id}-${Date.now()}`,
+                x: block.x,
+                y: block.y - 32, // Spawn just above block
+                width: 32,
+                height: 32,
+                velocityX: MUSHROOM_SPEED,
+                velocityY: 0, // Start with no vertical velocity
+                active: true,
+                spawnTime: Date.now(),
+                type: "SUPER", // Default to SUPER mushroom
+              };
+              // Add to ref - will be synced via UPDATE_LOCAL_STATE
+              mushroomsRef.current.push(newMushroom);
+              audioManager.playMushroomSpawn();
+              spawnParticles("MUSHROOM_BURST", block.x + 20, block.y + 20);
+            } else if (block.contents === null) {
+              // Empty question block just gives 100 points
+              dispatch({ type: "ADD_SCORE", payload: 100 });
+              audioManager.playMushroomSpawn();
+              spawnParticles("MUSHROOM_BURST", block.x + 20, block.y + 20);
+            }
+          } else if (block.type === "BRICK" && mario.isBig) {
+            // Big Mario breaks brick - remove from ref so UPDATE_LOCAL_STATE doesn't restore it
+            blocksRef.current = blocksRef.current.filter(
+              (b: Block) => b.x !== block.x || b.y !== block.y,
+            );
+            dispatch({
+              type: "BREAK_BRICK",
+              payload: { x: block.x, y: block.y },
+            });
+            audioManager.playBrickBreak();
+            spawnParticles("BRICK_BREAK", block.x + 20, block.y + 20);
+            dispatch({ type: "ADD_SCORE", payload: 100 });
+          }
+        }
+        // Horizontal collision on sides - only if Mario actually overlaps the block side
+        else if (
+          marioTop < block.y + block.height &&
+          marioBottom > block.y &&
+          // Mario must actually be touching the side, not just passing underneath
+          ((marioRight > block.x && marioLeft < block.x) ||
+            (marioLeft < block.x + block.width &&
+              marioRight > block.x + block.width))
+        ) {
+          // Mario is touching the block side - side collision
+          if (mario.x + mario.width / 2 < block.x + block.width / 2) {
+            mario.x = block.x - mario.width;
+            mario.velocityX = 0;
+          } else {
+            mario.x = block.x + block.width;
+            mario.velocityX = 0;
+          }
         }
       }
     }
@@ -784,6 +805,19 @@ export function useGameLogic() {
             mushroom.y = platform.y + platform.height;
             mushroom.velocityY = 0;
           }
+          // Check if mushroom hits the side of platform
+          else if (mushroom.velocityY >= 0) {
+            // Mushroom is not falling fast, resolve horizontal collision
+            if (
+              mushroom.x + mushroom.width / 2 <
+              platform.x + platform.width / 2
+            ) {
+              mushroom.x = platform.x - mushroom.width;
+            } else {
+              mushroom.x = platform.x + platform.width;
+            }
+            mushroom.velocityX = -mushroom.velocityX;
+          }
         }
       }
 
@@ -820,6 +854,26 @@ export function useGameLogic() {
         ) {
           // Hit head on bottom of block
           mushroom.y = block.y + block.height;
+          mushroom.velocityY = 0;
+        }
+      }
+
+      // Mushroom ground collision - check if mushroom lands on ground
+      for (const ground of grounds) {
+        const hitboxPadding = 4;
+        const mushroomLeft = mushroom.x - hitboxPadding;
+        const mushroomRight = mushroom.x + mushroom.width + hitboxPadding;
+        const mushroomBottom = mushroom.y + mushroom.height;
+
+        if (
+          mushroomLeft < ground.x + ground.width &&
+          mushroomRight > ground.x &&
+          mushroomBottom >= ground.y &&
+          mushroomBottom <= ground.y + 50 &&
+          mushroom.velocityY >= 0
+        ) {
+          // Mushroom is landing on top of ground
+          mushroom.y = ground.y - mushroom.height;
           mushroom.velocityY = 0;
         }
       }
