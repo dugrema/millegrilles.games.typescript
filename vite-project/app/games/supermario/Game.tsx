@@ -542,25 +542,6 @@ const Game: React.FC = () => {
           <LivesDisplay />
         </div>
 
-        {/* Controls hint */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "8px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(0, 0, 0, 0.6)",
-            color: "white",
-            padding: "8px 16px",
-            borderRadius: "4px",
-            fontSize: "14px",
-            zIndex: 10,
-          }}
-        >
-          <strong>Controls:</strong> Arrow Keys or WASD to move • Shift + Arrow
-          Keys to run • Space/Up/W to jump • P to pause
-        </div>
-
         {/* Particles overlay - inside CameraTransform so particles scroll with world */}
         <Particles />
 
