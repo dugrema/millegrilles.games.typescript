@@ -1,0 +1,74 @@
+{
+  "id": "1-1",
+  "name": "World 1-1",
+  "world": 1,
+  "level": 1,
+  "nextLevelId": "1-2",
+  "isFinalLevel": false,
+  "width": 3000,
+  "height": 600,
+  "groundHeight": 80,
+  "skyColor": {
+    "top": "#5c94fc",
+    "bottom": "#87ceeb"
+  },
+  "marioStart": {
+    "x": 100,
+    "y": 480
+  },
+  "flagpole": {
+    "x": 2900,
+    "height": 250
+  },
+  "ground": [
+    { "x": 0, "width": 800 },
+    { "x": 950, "width": 450 },
+    { "x": 1520, "width": 380 },
+    { "x": 1950, "width": 550 },
+    { "x": 2550, "width": 450 }
+  ],
+  "pipes": [
+    { "x": 450, "height": 80 },
+    { "x": 650, "height": 100 },
+    { "x": 1000, "height": 60 },
+    { "x": 1200, "height": 60 },
+    { "x": 1600, "height": 80 },
+    { "x": 2100, "height": 100 },
+    { "x": 2600, "height": 80 }
+  ],
+  "enemies": [
+    { "x": 600, "walkRange": 150, "type": "GOOMBA" },
+    { "x": 1300, "walkRange": 150, "type": "GOOMBA" },
+    { "x": 2200, "walkRange": 150, "type": "GOOMBA" }
+  ],
+  "coins": [
+    { "x": 300, "y": 400 },
+    { "x": 500, "y": 420 },
+    { "x": 1100, "y": 400 },
+    { "x": 1700, "y": 420 },
+    { "x": 2000, "y": 400 },
+    { "x": 2300, "y": 420 },
+    { "x": 2700, "y": 400 }
+  ],
+  "platforms": [
+    { "x": 700, "y": 420, "width": 200, "height": 20, "type": "BRICK" },
+    { "x": 1100, "y": 400, "width": 100, "height": 20, "type": "BRICK" },
+    { "x": 1550, "y": 440, "width": 60, "height": 20, "type": "BRICK" },
+    { "x": 1800, "y": 380, "width": 120, "height": 20, "type": "BRICK" },
+    { "x": 2200, "y": 420, "width": 80, "height": 20, "type": "BRICK" }
+  ],
+  "blocks": [
+    { "x": 350, "y": 380, "type": "QUESTION", "contents": "COIN" },
+    { "x": 550, "y": 360, "type": "QUESTION", "contents": "COIN" },
+    { "x": 800, "y": 320, "type": "BRICK" },
+    { "x": 840, "y": 320, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 880, "y": 320, "type": "BRICK" },
+    { "x": 1200, "y": 280, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 1650, "y": 400, "type": "BRICK" },
+    { "x": 1690, "y": 400, "type": "BRICK" },
+    { "x": 1730, "y": 320, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 2050, "y": 360, "type": "QUESTION", "contents": "COIN" },
+    { "x": 2400, "y": 360, "type": "QUESTION", "contents": "COIN" }
+  ],
+  "oneUpMushrooms": [{ "x": 2100, "y": 280 }]
+}

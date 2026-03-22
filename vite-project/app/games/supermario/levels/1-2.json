@@ -1,0 +1,98 @@
+{
+  "id": "1-2",
+  "name": "World 1-2",
+  "world": 1,
+  "level": 2,
+  "nextLevelId": "1-3",
+  "isFinalLevel": false,
+  "width": 2800,
+  "height": 600,
+  "groundHeight": 80,
+  "skyColor": {
+    "top": "#5c94fc",
+    "bottom": "#87ceeb"
+  },
+  "marioStart": {
+    "x": 100,
+    "y": 480
+  },
+  "flagpole": {
+    "x": 2700,
+    "height": 250
+  },
+  "ground": [
+    { "x": 0, "width": 600 },
+    { "x": 740, "width": 350 },
+    { "x": 1170, "width": 400 },
+    { "x": 1610, "width": 450 },
+    { "x": 2080, "width": 300 },
+    { "x": 2400, "width": 400 }
+  ],
+  "pipes": [
+    { "x": 250, "height": 60 },
+    { "x": 450, "height": 80 },
+    { "x": 850, "height": 100 },
+    { "x": 1300, "height": 80 },
+    { "x": 1750, "height": 120 },
+    { "x": 2150, "height": 60 },
+    { "x": 2450, "height": 80 }
+  ],
+  "enemies": [
+    { "x": 500, "walkRange": 150, "type": "GOOMBA" },
+    { "x": 900, "walkRange": 150, "type": "GOOMBA" },
+    { "x": 1100, "walkRange": 120, "type": "GOOMBA" },
+    { "x": 1400, "walkRange": 150, "type": "GOOMBA" },
+    { "x": 1850, "walkRange": 120, "type": "GOOMBA" },
+    { "x": 2200, "walkRange": 150, "type": "GOOMBA" }
+  ],
+  "coins": [
+    { "x": 200, "y": 380 },
+    { "x": 350, "y": 400 },
+    { "x": 550, "y": 420 },
+    { "x": 950, "y": 400 },
+    { "x": 1200, "y": 380 },
+    { "x": 1500, "y": 420 },
+    { "x": 1900, "y": 400 },
+    { "x": 2300, "y": 380 },
+    { "x": 2500, "y": 400 }
+  ],
+  "platforms": [
+    { "x": 650, "y": 440, "width": 100, "height": 20, "type": "BRICK" },
+    { "x": 1050, "y": 400, "width": 120, "height": 20, "type": "BRICK" },
+    { "x": 1450, "y": 420, "width": 80, "height": 20, "type": "BRICK" },
+    { "x": 1950, "y": 400, "width": 140, "height": 20, "type": "BRICK" },
+    { "x": 2250, "y": 440, "width": 100, "height": 20, "type": "BRICK" },
+    { "x": 300, "y": 360, "width": 80, "height": 20, "type": "BRICK" },
+    { "x": 750, "y": 320, "width": 100, "height": 20, "type": "BRICK" },
+    { "x": 1250, "y": 360, "width": 60, "height": 20, "type": "BRICK" },
+    { "x": 1600, "y": 340, "width": 120, "height": 20, "type": "BRICK" }
+  ],
+  "blocks": [
+    { "x": 400, "y": 360, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 580, "y": 320, "type": "QUESTION", "contents": "COIN" },
+    { "x": 580, "y": 280, "type": "BRICK" },
+    { "x": 620, "y": 280, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 660, "y": 280, "type": "BRICK" },
+    { "x": 700, "y": 280, "type": "QUESTION", "contents": "COIN" },
+    { "x": 740, "y": 280, "type": "BRICK" },
+    { "x": 1100, "y": 360, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 1300, "y": 340, "type": "BRICK" },
+    { "x": 1340, "y": 340, "type": "QUESTION", "contents": "COIN" },
+    { "x": 1380, "y": 340, "type": "BRICK" },
+    { "x": 1700, "y": 320, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 1740, "y": 320, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 1780, "y": 320, "type": "BRICK" },
+    { "x": 2000, "y": 360, "type": "QUESTION", "contents": "COIN" },
+    { "x": 2040, "y": 360, "type": "QUESTION", "contents": "COIN" },
+    { "x": 2080, "y": 360, "type": "QUESTION", "contents": "COIN" },
+    { "x": 2120, "y": 360, "type": "BRICK" },
+    { "x": 2350, "y": 380, "type": "QUESTION", "contents": "MUSHROOM" },
+    { "x": 2600, "y": 340, "type": "BRICK" },
+    { "x": 2640, "y": 340, "type": "QUESTION", "contents": "COIN" },
+    { "x": 2680, "y": 340, "type": "BRICK" }
+  ],
+  "oneUpMushrooms": [
+    { "x": 1700, "y": 300 },
+    { "x": 2100, "y": 300 }
+  ]
+}
