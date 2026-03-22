@@ -1,4 +1,4 @@
-import { SuperMarioProvider } from "../../games/supermario";
+import { SuperMarioGameProvider } from "../../games/supermario";
 import SuperMarioGame from "../../games/supermario/Game";
 import styled from "styled-components";
 
@@ -26,9 +26,9 @@ export default function SuperMario() {
   return (
     <PageContainer>
       <GameWrapper>
-        <SuperMarioProvider>
+        <SuperMarioGameProvider>
           <SuperMarioGame />
-        </SuperMarioProvider>
+        </SuperMarioGameProvider>
       </GameWrapper>
     </PageContainer>
   );
